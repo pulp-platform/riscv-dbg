@@ -16,7 +16,8 @@
  */
 
 module dm_csrs #(
-    parameter int NrHarts = -1
+    parameter int NrHarts  = -1,
+    parameter int BusWidth = -1
 ) (
     input  logic                              clk_i,              // Clock
     input  logic                              rst_ni,             // Asynchronous reset active low
@@ -54,8 +55,8 @@ module dm_csrs #(
     input  logic [dm::DataCount-1:0][31:0]    data_i,
     input  logic                              data_valid_i,
     // system bus access module (SBA)
-    output logic [63:0]                       sbaddress_o,
-    input  logic [63:0]                       sbaddress_i,
+    output logic [BusWidth-1:0]               sbaddress_o,
+    input  logic [BusWidth-1:0]               sbaddress_i,
     output logic                              sbaddress_write_valid_o,
     // control signals in
     output logic                              sbreadonaddr_o,
@@ -63,11 +64,11 @@ module dm_csrs #(
     output logic [2:0]                        sbaccess_o,
     // data out
     output logic                              sbreadondata_o,
-    output logic [63:0]                       sbdata_o,
+    output logic [BusWidth-1:0]               sbdata_o,
     output logic                              sbdata_read_valid_o,
     output logic                              sbdata_write_valid_o,
     // read data in
-    input  logic [63:0]                       sbdata_i,
+    input  logic [BusWidth-1:0]               sbdata_i,
     input  logic                              sbdata_valid_i,
     // control signals
     input  logic                              sbbusy_i,
@@ -254,6 +255,8 @@ module dm_csrs #(
                 dm::SBCS: begin
                     if (sbbusy_i) begin
                         sbcs_d.sbbusyerror = 1'b1;
+                    end begin
+                        resp_queue_data = sbcs_q;
                     end
                 end
                 dm::SBAddress0: begin
@@ -448,13 +451,13 @@ module dm_csrs #(
         // static values for dcsr
         sbcs_d.sbversion            = 3'b1;
         sbcs_d.sbbusy               = sbbusy_i;
-        sbcs_d.sbasize              = 7'd64; // bus is 64 bit wide
+        sbcs_d.sbasize              = BusWidth; // bus is 64 bit wide
         sbcs_d.sbaccess128          = 1'b0;
-        sbcs_d.sbaccess64           = 1'b0;
-        sbcs_d.sbaccess32           = 1'b0;
+        sbcs_d.sbaccess64           = BusWidth == 64;
+        sbcs_d.sbaccess32           = BusWidth == 32;
         sbcs_d.sbaccess16           = 1'b0;
         sbcs_d.sbaccess8            = 1'b0;
-        sbcs_d.sbaccess             = 1'b0;
+        sbcs_d.sbaccess             = BusWidth == 64 ? 2'd3 : 2'd2;
     end
 
     // output multiplexer
