@@ -12,4 +12,5 @@ riscv-dbg:
         src/dmi_cdc.sv,
         src/dmi_jtag.sv,
         src/dmi_jtag_tap.sv,
+        src/dm_sba.sv,
   ]
