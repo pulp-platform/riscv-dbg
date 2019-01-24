@@ -1,0 +1,15 @@
+riscv-dbg:
+  files: [
+        src/riscv_pkg.sv,
+        src/dm_pkg.sv,
+        src/ariane_pkg.sv,
+        src/axi_pkg.sv,
+        src/debug_rom/debug_rom.sv,
+        src/ariane_axi_pkg.sv,
+        src/dm_csrs.sv,
+        src/dm_mem.sv,
+        src/dm_top.sv,
+        src/dmi_cdc.sv,
+        src/dmi_jtag.sv,
+        src/dmi_jtag_tap.sv,
+  ]
