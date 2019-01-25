@@ -17,6 +17,8 @@
  *              SW infrastructure re-use. As of version 0.13
  */
 
+`define PULPISSIMO
+
 module dm_top #(
     parameter int NrHarts      = -1,
     parameter int AxiIdWidth   = -1,
@@ -33,13 +35,21 @@ module dm_top #(
     input  logic [NrHarts-1:0] unavailable_i, // communicate whether the hart is unavailable (e.g.: power down)
 
     // bus slave, for an execution based technique
+    `ifndef PULPISSIMO
     input  ariane_axi::req_t   axi_s_req_i,
     output ariane_axi::resp_t  axi_s_resp_o,
+    `else
+    APB_BUS.Slave              apb_s_bus,
+    `endif
 
     // bus master, for system bus accesses
+    // bus master, for system bus accesses
+    `ifndef PULPISSIMO
     output ariane_axi::req_t   axi_m_req_o,
     input  ariane_axi::resp_t  axi_m_resp_i,
-
+    `else
+    APB_BUS.Master             apb_m_bus,
+    `endif
     // Connection to DTM - compatible to RocketChip Debug Module
     input  logic               dmi_rst_ni,
     input  logic               dmi_req_valid_i,
@@ -151,8 +161,13 @@ module dm_top #(
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
         .dmactive_i              ( dmactive_o            ),
+`ifndef PULPISSIMO
         .axi_req_o               ( axi_m_req_o           ),
         .axi_resp_i              ( axi_m_resp_i          ),
+`else
+        .axi_req_o               (                       ),
+        .axi_resp_i              ( '0                    ),
+`endif
         .sbaddress_i             ( sbaddress_csrs_sba    ),
         .sbaddress_o             ( sbaddress_sba_csrs    ),
         .sbaddress_write_valid_i ( sbaddress_write_valid ),
@@ -198,6 +213,7 @@ module dm_top #(
         .rdata_o                 ( rdata                 )
     );
 
+    `ifndef PULPISSIMO
     AXI_BUS #(
         .AXI_ID_WIDTH   ( AxiIdWidth   ),
         .AXI_ADDR_WIDTH ( AxiAddrWidth ),
@@ -226,5 +242,45 @@ module dm_top #(
         .data_o     ( wdata    ),
         .data_i     ( rdata    )
     );
+    `else
+    logic grant, valid;
+
+    apb2per #(
+        .PER_ADDR_WIDTH ( 15  ),
+        .APB_ADDR_WIDTH ( 32  )
+    ) apb2per_newdebug_i (
+        .clk_i                ( clk_i                   ),
+        .rst_ni               ( rst_ni                  ),
+
+        .PADDR                ( apb_s_bus.paddr   ),
+        .PWDATA               ( apb_s_bus.pwdata  ),
+        .PWRITE               ( apb_s_bus.pwrite  ),
+        .PSEL                 ( apb_s_bus.psel    ),
+        .PENABLE              ( apb_s_bus.penable ),
+        .PRDATA               ( apb_s_bus.prdata  ),
+        .PREADY               ( apb_s_bus.pready  ),
+        .PSLVERR              ( apb_s_bus.pslverr ),
+
+        .per_master_req_o     ( req                                                  ),
+        .per_master_add_o     ( addr                                                 ),
+        .per_master_we_o      ( we                                                   ),
+        .per_master_wdata_o   ( wdata                                                ),
+        .per_master_be_o      ( be                                                   ),
+        .per_master_gnt_i     ( grant                                                ),
+        .per_master_r_valid_i ( valid                                                ),
+        .per_master_r_opc_i   ( '0                                                   ),
+        .per_master_r_rdata_i ( rdata                                                )
+     );
+    assign grant = req;
+
+     always_ff @(posedge clk_i or negedge rst_ni) begin : apb2per_valid
+         if(~rst_ni) begin
+             valid <= 0;
+         end else begin
+             valid <= grant;
+         end
+     end
+
+    `endif
 
 endmodule
