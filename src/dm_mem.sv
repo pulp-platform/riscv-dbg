@@ -51,7 +51,7 @@ module dm_mem #(
     input  logic                             we_i,
     input  logic [BusWidth-1:0]              addr_i,
     input  logic [BusWidth-1:0]              wdata_i,
-    input  logic [BusWidth/4-1:0]            be_i,
+    input  logic [BusWidth/8-1:0]            be_i,
     output logic [BusWidth-1:0]              rdata_o
 );
 
