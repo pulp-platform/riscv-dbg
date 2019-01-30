@@ -17,7 +17,8 @@
  */
 
 module dm_mem #(
-    parameter int NrHarts     = -1
+    parameter int NrHarts     = -1,
+    parameter int BusWidth    = -1
 )(
     input  logic                             clk_i,       // Clock
     input  logic                             rst_ni,      // debug module reset
@@ -48,10 +49,10 @@ module dm_mem #(
     // SRAM interface
     input  logic                             req_i,
     input  logic                             we_i,
-    input  logic [63:0]                      addr_i,
-    input  logic [63:0]                      wdata_i,
-    input  logic [7:0]                       be_i,
-    output logic [63:0]                      rdata_o
+    input  logic [BusWidth-1:0]              addr_i,
+    input  logic [BusWidth-1:0]              wdata_i,
+    input  logic [BusWidth/4-1:0]            be_i,
+    output logic [BusWidth-1:0]              rdata_o
 );
 
     localparam int HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
