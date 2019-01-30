@@ -26,7 +26,7 @@ module dm_sba #(
     output logic [BusWidth-1:0]    master_add_o,
     output logic                   master_we_o,
     output logic [BusWidth-1:0]    master_wdata_o,
-    output logic [BusWidth/4-1:0]  master_be_o,
+    output logic [BusWidth/8-1:0]  master_be_o,
     input  logic                   master_gnt_i,
     input  logic                   master_r_valid_i,
     input  logic [BusWidth-1:0]    master_r_rdata_i,
@@ -58,7 +58,7 @@ module dm_sba #(
     logic                  req;
     logic                  gnt;
     logic                  we;
-    logic [BusWidth/4-1:0] be;
+    logic [BusWidth/8-1:0] be;
 
     assign sbbusy_o = (state_q != Idle) ? 1'b1 : 1'b0;
 
@@ -94,9 +94,18 @@ module dm_sba #(
                 we  = 1'b1;
                 // generate byte enable mask
                 case (sbaccess_i)
-                    3'b000: be[ sbaddress_i[2:0]] = '1;
-                    3'b001: be[{sbaddress_i[2:1], 1'b0} +: 2] = '1;
-                    3'b010: be[{sbaddress_i[2:2], 2'b0} +: 4] = '1;
+                    3'b000: begin
+                        if (BusWidth == 64) be[ sbaddress_i[2:0]] = '1;
+                        else                be[ sbaddress_i[1:0]] = '1;
+                    end
+                    3'b001: begin
+                        if (BusWidth == 64) be[{sbaddress_i[2:1], 1'b0} +: 2] = '1;
+                        else                be[{sbaddress_i[1:1], 1'b0} +: 2] = '1;
+                    end
+                    3'b010: begin
+                        if (BusWidth == 64) be[{sbaddress_i[2:2], 2'b0} +: 4] = '1;
+                        else                be = '1;
+                    end
                     3'b011: be = '1;
                     default:;
                 endcase
@@ -141,7 +150,7 @@ module dm_sba #(
     assign master_add_o    = address[BusWidth-1:0];
     assign master_we_o     = we;
     assign master_wdata_o  = sbdata_i[BusWidth-1:0];
-    assign master_be_o     = be[BusWidth/4-1:0];
+    assign master_be_o     = be[BusWidth/8-1:0];
     assign gnt             = master_gnt_i;
     assign sbdata_valid_o  = master_r_valid_i;
     assign sbdata_o        = master_r_rdata_i[BusWidth-1:0];
