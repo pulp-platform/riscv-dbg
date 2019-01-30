@@ -36,7 +36,7 @@ module dm_top #(
     input  logic                  slave_req_i,
     input  logic                  slave_we_i,
     input  logic [BusWidth-1:0]   slave_addr_i,
-    input  logic [BusWidth/4-1:0] slave_be_i,
+    input  logic [BusWidth/8-1:0] slave_be_i,
     input  logic [BusWidth-1:0]   slave_wdata_i,
     output logic [BusWidth-1:0]   slave_rdata_o,
 
@@ -44,7 +44,7 @@ module dm_top #(
     output logic [BusWidth-1:0]    master_add_o,
     output logic                   master_we_o,
     output logic [BusWidth-1:0]    master_wdata_o,
-    output logic [BusWidth/4-1:0]  master_be_o,
+    output logic [BusWidth/8-1:0]  master_be_o,
     input  logic                   master_gnt_i,
     input  logic                   master_r_valid_i,
     input  logic [BusWidth-1:0]    master_r_rdata_i,
