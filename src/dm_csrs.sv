@@ -15,8 +15,6 @@
  * Description: Debug CSRs. Communication over Debug Transport Module (DTM)
  */
 
-`define PULPISSIMO
-
 module dm_csrs #(
     parameter int NrHarts  = -1,
     parameter int BusWidth = -1
