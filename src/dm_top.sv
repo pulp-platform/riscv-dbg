@@ -17,48 +17,47 @@
  *              SW infrastructure re-use. As of version 0.13
  */
 
-`define PULPISSIMO
-
 module dm_top #(
     parameter int NrHarts      = -1,
     parameter int AxiIdWidth   = -1,
     parameter int AxiAddrWidth = -1,
     parameter int AxiDataWidth = -1,
-    parameter int AxiUserWidth = -1
+    parameter int AxiUserWidth = -1,
+    parameter int BusWidth     = -1
 ) (
-    input  logic               clk_i,       // clock
-    input  logic               rst_ni,      // asynchronous reset active low, connect PoR here, not the system reset
-    input  logic               testmode_i,
-    output logic               ndmreset_o,  // non-debug module reset
-    output logic               dmactive_o,  // debug module is active
-    output logic [NrHarts-1:0] debug_req_o, // async debug request
-    input  logic [NrHarts-1:0] unavailable_i, // communicate whether the hart is unavailable (e.g.: power down)
+    input  logic                  clk_i,       // clock
+    input  logic                  rst_ni,      // asynchronous reset active low, connect PoR here, not the system reset
+    input  logic                  testmode_i,
+    output logic                  ndmreset_o,  // non-debug module reset
+    output logic                  dmactive_o,  // debug module is active
+    output logic [NrHarts-1:0]    debug_req_o, // async debug request
+    input  logic [NrHarts-1:0]    unavailable_i, // communicate whether the hart is unavailable (e.g.: power down)
 
-    // bus slave, for an execution based technique
-    `ifndef PULPISSIMO
-    input  ariane_axi::req_t   axi_s_req_i,
-    output ariane_axi::resp_t  axi_s_resp_o,
-    `else
-    APB_BUS.Slave              apb_s_bus,
-    `endif
+    input  logic                  slave_req_i,
+    input  logic                  slave_we_i,
+    input  logic [BusWidth-1:0]   slave_addr_i,
+    input  logic [BusWidth/4-1:0] slave_be_i,
+    input  logic [BusWidth-1:0]   slave_wdata_i,
+    output logic [BusWidth-1:0]   slave_rdata_o,
 
-    // bus master, for system bus accesses
-    // bus master, for system bus accesses
-    `ifndef PULPISSIMO
-    output ariane_axi::req_t   axi_m_req_o,
-    input  ariane_axi::resp_t  axi_m_resp_i,
-    `else
-    APB_BUS.Master             apb_m_bus,
-    `endif
+    output logic                   master_req_o,
+    output logic [BusWidth-1:0]    master_add_o,
+    output logic                   master_we_o,
+    output logic [BusWidth-1:0]    master_wdata_o,
+    output logic [BusWidth/4-1:0]  master_be_o,
+    input  logic                   master_gnt_i,
+    input  logic                   master_r_valid_i,
+    input  logic [BusWidth-1:0]    master_r_rdata_i,
+
     // Connection to DTM - compatible to RocketChip Debug Module
-    input  logic               dmi_rst_ni,
-    input  logic               dmi_req_valid_i,
-    output logic               dmi_req_ready_o,
-    input  dm::dmi_req_t       dmi_req_i,
+    input  logic                  dmi_rst_ni,
+    input  logic                  dmi_req_valid_i,
+    output logic                  dmi_req_ready_o,
+    input  dm::dmi_req_t          dmi_req_i,
 
-    output logic               dmi_resp_valid_o,
-    input  logic               dmi_resp_ready_i,
-    output dm::dmi_resp_t      dmi_resp_o
+    output logic                  dmi_resp_valid_o,
+    input  logic                  dmi_resp_ready_i,
+    output dm::dmi_resp_t         dmi_resp_o
 );
 
     // Debug CSRs
@@ -71,13 +70,6 @@ module dm_top #(
     logic                             cmd_valid;
     dm::command_t                     cmd;
 
-    logic                             req;
-    logic                             we;
-    logic [63:0]                      addr;
-    logic [7:0]                       be;
-    logic [63:0]                      wdata;
-    logic [63:0]                      rdata;
-
     logic                             cmderror_valid;
     dm::cmderr_t                      cmderror;
     logic                             cmdbusy;
@@ -87,17 +79,17 @@ module dm_top #(
     logic                             data_valid;
     logic [19:0]                      hartsel;
     // System Bus Access Module
-    logic [63:0]                      sbaddress_csrs_sba;
-    logic [63:0]                      sbaddress_sba_csrs;
+    logic [BusWidth-1:0]              sbaddress_csrs_sba;
+    logic [BusWidth-1:0]              sbaddress_sba_csrs;
     logic                             sbaddress_write_valid;
     logic                             sbreadonaddr;
     logic                             sbautoincrement;
     logic [2:0]                       sbaccess;
     logic                             sbreadondata;
-    logic [63:0]                      sbdata_write;
+    logic [BusWidth-1:0]              sbdata_write;
     logic                             sbdata_read_valid;
     logic                             sbdata_write_valid;
-    logic [63:0]                      sbdata_read;
+    logic [BusWidth-1:0]              sbdata_read;
     logic                             sbdata_valid;
     logic                             sbbusy;
     logic                             sberror_valid;
@@ -110,7 +102,8 @@ module dm_top #(
     end
 
     dm_csrs #(
-        .NrHarts(NrHarts)
+        .NrHarts(NrHarts),
+        .BusWidth(BusWidth)
     ) i_dm_csrs (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
@@ -157,17 +150,22 @@ module dm_top #(
         .sberror_i               ( sberror               )
     );
 
-    dm_sba i_dm_sba (
+    dm_sba #(
+        .BusWidth(BusWidth)
+    ) i_dm_sba (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
         .dmactive_i              ( dmactive_o            ),
-`ifndef PULPISSIMO
-        .axi_req_o               ( axi_m_req_o           ),
-        .axi_resp_i              ( axi_m_resp_i          ),
-`else
-        .axi_req_o               (                       ),
-        .axi_resp_i              ( '0                    ),
-`endif
+
+        .master_req_o            ( master_req_o          ),
+        .master_add_o            ( master_add_o          ),
+        .master_we_o             ( master_we_o           ),
+        .master_wdata_o          ( master_wdata_o        ),
+        .master_be_o             ( master_be_o           ),
+        .master_gnt_i            ( master_gnt_i          ),
+        .master_r_valid_i        ( master_r_valid_i      ),
+        .master_r_rdata_i        ( master_r_rdata_i      ),
+
         .sbaddress_i             ( sbaddress_csrs_sba    ),
         .sbaddress_o             ( sbaddress_sba_csrs    ),
         .sbaddress_write_valid_i ( sbaddress_write_valid ),
@@ -186,7 +184,8 @@ module dm_top #(
     );
 
     dm_mem #(
-        .NrHarts (NrHarts)
+        .NrHarts(NrHarts),
+        .BusWidth(BusWidth)
     ) i_dm_mem (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
@@ -205,82 +204,12 @@ module dm_top #(
         .data_i                  ( data_csrs_mem         ),
         .data_o                  ( data_mem_csrs         ),
         .data_valid_o            ( data_valid            ),
-        .req_i                   ( req                   ),
-        .we_i                    ( we                    ),
-        .addr_i                  ( addr                  ),
-        .wdata_i                 ( wdata                 ),
-        .be_i                    ( be                    ),
-        .rdata_o                 ( rdata                 )
+        .req_i                   ( slave_req_i           ),
+        .we_i                    ( slave_we_i            ),
+        .addr_i                  ( slave_addr_i          ),
+        .wdata_i                 ( slave_wdata_i         ),
+        .be_i                    ( slave_be_i            ),
+        .rdata_o                 ( slave_rdata_o         )
     );
-
-    `ifndef PULPISSIMO
-    AXI_BUS #(
-        .AXI_ID_WIDTH   ( AxiIdWidth   ),
-        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-        .AXI_DATA_WIDTH ( AxiDataWidth ),
-        .AXI_USER_WIDTH ( AxiUserWidth )
-    ) slave();
-
-    axi_slave_connect_rev i_axi_slave_connect_rev (
-      .axi_req_i (axi_s_req_i),
-      .axi_resp_o(axi_s_resp_o),
-      .slave(slave));
-
-    axi2mem #(
-        .AXI_ID_WIDTH   ( AxiIdWidth   ),
-        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-        .AXI_DATA_WIDTH ( AxiDataWidth ),
-        .AXI_USER_WIDTH ( AxiUserWidth )
-    ) i_axi2mem (
-        .clk_i      ( clk_i    ),
-        .rst_ni     ( rst_ni   ),
-        .slave      ( slave    ),
-        .req_o      ( req      ),
-        .we_o       ( we       ),
-        .addr_o     ( addr     ),
-        .be_o       ( be       ),
-        .data_o     ( wdata    ),
-        .data_i     ( rdata    )
-    );
-    `else
-    logic grant, valid;
-
-    apb2per #(
-        .PER_ADDR_WIDTH ( 15  ),
-        .APB_ADDR_WIDTH ( 32  )
-    ) apb2per_newdebug_i (
-        .clk_i                ( clk_i                   ),
-        .rst_ni               ( rst_ni                  ),
-
-        .PADDR                ( apb_s_bus.paddr   ),
-        .PWDATA               ( apb_s_bus.pwdata  ),
-        .PWRITE               ( apb_s_bus.pwrite  ),
-        .PSEL                 ( apb_s_bus.psel    ),
-        .PENABLE              ( apb_s_bus.penable ),
-        .PRDATA               ( apb_s_bus.prdata  ),
-        .PREADY               ( apb_s_bus.pready  ),
-        .PSLVERR              ( apb_s_bus.pslverr ),
-
-        .per_master_req_o     ( req                                                  ),
-        .per_master_add_o     ( addr                                                 ),
-        .per_master_we_o      ( we                                                   ),
-        .per_master_wdata_o   ( wdata                                                ),
-        .per_master_be_o      ( be                                                   ),
-        .per_master_gnt_i     ( grant                                                ),
-        .per_master_r_valid_i ( valid                                                ),
-        .per_master_r_opc_i   ( '0                                                   ),
-        .per_master_r_rdata_i ( rdata                                                )
-     );
-    assign grant = req;
-
-     always_ff @(posedge clk_i or negedge rst_ni) begin : apb2per_valid
-         if(~rst_ni) begin
-             valid <= 0;
-         end else begin
-             valid <= grant;
-         end
-     end
-
-    `endif
 
 endmodule
