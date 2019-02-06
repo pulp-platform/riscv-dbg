@@ -85,6 +85,8 @@ module dm_mem #(
 
     logic [63:0] rom_rdata;
     logic [63:0] rdata_d, rdata_q;
+    logic        word_enable32_q;
+
     // distinguish whether we need to forward data from the ROM or the FSM
     // latch the address for this
     logic fwd_rom_d, fwd_rom_q;
@@ -172,7 +174,7 @@ module dm_mem #(
 
         halted_d     = halted_q;
         resuming_d   = resuming_q;
-        rdata_o      = fwd_rom_q ? rom_rdata : rdata_q;
+        rdata_o      = (BusWidth == 64) ? (fwd_rom_q ? rom_rdata : rdata_q) : ( word_enable32_q ? (fwd_rom_q ? rom_rdata[63:32] : rdata_q[63:32]) : (fwd_rom_q ? rom_rdata[31:0] : rdata_q[31:0]) );
         rdata_d      = rdata_q;
         // convert the data in bits representation
         data_bits    = data_i;
@@ -365,8 +367,8 @@ module dm_mem #(
     debug_rom i_debug_rom (
         .clk_i,
         .req_i,
-        .addr_i,
-        .rdata_o (rom_rdata)
+        .addr_i  ( {32'b0, addr_i} ),
+        .rdata_o ( rom_rdata       )
     );
 
     // ROM starts at the HaltAddress of the core e.g.: it immediately jumps to
@@ -375,17 +377,19 @@ module dm_mem #(
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin
-            fwd_rom_q  <= 1'b0;
-            rdata_q    <= '0;
-            halted_q   <= 1'b0;
-            resuming_q <= 1'b0;
-            state_q    <= Idle;
+            fwd_rom_q       <= 1'b0;
+            rdata_q         <= '0;
+            halted_q        <= 1'b0;
+            resuming_q      <= 1'b0;
+            state_q         <= Idle;
+            word_enable32_q <= 1'b0;
         end else begin
-            fwd_rom_q  <= fwd_rom_d;
-            rdata_q    <= rdata_d;
-            halted_q   <= halted_d;
-            resuming_q <= resuming_d;
-            state_q    <= state_d;
+            fwd_rom_q       <= fwd_rom_d;
+            rdata_q         <= rdata_d;
+            halted_q        <= halted_d;
+            resuming_q      <= resuming_d;
+            state_q         <= state_d;
+            word_enable32_q <= addr_i[2];
         end
     end
 
