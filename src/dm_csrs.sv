@@ -253,11 +253,7 @@ module dm_csrs #(
                 dm::HaltSum2: resp_queue_data = haltsum2;
                 dm::HaltSum3: resp_queue_data = haltsum3;
                 dm::SBCS: begin
-                    if (sbbusy_i) begin
-                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
-                        resp_queue_data = sbcs_q;
-                    end
+                    resp_queue_data = sbcs_q;
                 end
                 dm::SBAddress0: begin
                     // access while the SBA was busy
