@@ -379,8 +379,8 @@ module dm_mem #(
         if (~rst_ni) begin
             fwd_rom_q       <= 1'b0;
             rdata_q         <= '0;
-            halted_q        <= 1'b0;
-            resuming_q      <= 1'b0;
+            halted_q        <= '0;
+            resuming_q      <= '0;
             state_q         <= Idle;
             word_enable32_q <= 1'b0;
         end else begin
