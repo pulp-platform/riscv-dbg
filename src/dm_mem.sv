@@ -17,8 +17,10 @@
  */
 
 module dm_mem #(
-    parameter int NrHarts     = -1,
-    parameter int BusWidth    = -1
+    parameter int                 NrHarts          = -1,
+    parameter int                 BusWidth         = -1,
+    parameter logic [NrHarts-1:0] Selectable_Harts = -1,
+    parameter int                 MaxNrHarts       = -1
 )(
     input  logic                             clk_i,       // Clock
     input  logic                             rst_ni,      // debug module reset
@@ -375,22 +377,34 @@ module dm_mem #(
     // the ROM base address
     assign fwd_rom_d = (addr_i[DbgAddressBits-1:0] >= dm::HaltAddress[DbgAddressBits-1:0]) ? 1'b1 : 1'b0;
 
+
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin
             fwd_rom_q       <= 1'b0;
             rdata_q         <= '0;
-            halted_q        <= 1'b0;
-            resuming_q      <= 1'b0;
             state_q         <= Idle;
             word_enable32_q <= 1'b0;
         end else begin
             fwd_rom_q       <= fwd_rom_d;
             rdata_q         <= rdata_d;
-            halted_q        <= halted_d;
-            resuming_q      <= resuming_d;
             state_q         <= state_d;
             word_enable32_q <= addr_i[2];
         end
     end
+
+    genvar SEL_ID;
+    generate
+    for(SEL_ID=0;SEL_ID < MaxNrHarts;SEL_ID=SEL_ID+1) begin
+        always_ff @(posedge clk_i or negedge rst_ni) begin
+            if (~rst_ni) begin
+                halted_q[SEL_ID]   <= 1'b0;
+                resuming_q[SEL_ID] <= 1'b0;
+            end else begin
+                halted_q[SEL_ID]   <= Selectable_Harts[SEL_ID] ? halted_d[SEL_ID]   : 1'b0;
+                resuming_q[SEL_ID] <= Selectable_Harts[SEL_ID] ? resuming_d[SEL_ID] : 1'b0;
+            end
+        end
+    end
+    endgenerate
 
 endmodule
