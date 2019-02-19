@@ -16,8 +16,10 @@
  */
 
 module dm_csrs #(
-    parameter int NrHarts  = -1,
-    parameter int BusWidth = -1
+    parameter int                 NrHarts          = -1,
+    parameter int                 BusWidth         = -1,
+    parameter logic [NrHarts-1:0] Selectable_Harts = -1,
+    parameter int                 MaxNrHarts       = -1
 ) (
     input  logic                              clk_i,              // Clock
     input  logic                              rst_ni,             // Asynchronous reset active low
@@ -500,7 +502,6 @@ module dm_csrs #(
         // PoR
         if (~rst_ni) begin
             dmcontrol_q    <= '0;
-            havereset_q    <= '1;
             // this is the only write-able bit during reset
             cmderr_q       <= dm::CmdErrNone;
             command_q      <= '0;
@@ -511,7 +512,6 @@ module dm_csrs #(
             sbaddr_q       <= '0;
             sbdata_q       <= '0;
         end else begin
-            havereset_q    <= havereset_d;
             // synchronous re-set of debug module, active-low, except for dmactive
             if (!dmcontrol_q.dmactive) begin
                 dmcontrol_q.haltreq          <= '0;
@@ -549,6 +549,19 @@ module dm_csrs #(
         end
     end
 
+
+    genvar SEL_ID;
+    generate
+    for(SEL_ID=0;SEL_ID < MaxNrHarts;SEL_ID=SEL_ID+1) begin
+        always_ff @(posedge clk_i or negedge rst_ni) begin
+            if (~rst_ni) begin
+                havereset_q[SEL_ID]  <= 1'b1;
+            end else begin
+                havereset_q[SEL_ID]  <= Selectable_Harts[SEL_ID] ? havereset_d[SEL_ID]   : 1'b0;
+            end
+        end
+    end
+    endgenerate
 
 ///////////////////////////////////////////////////////
 // assertions
