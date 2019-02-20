@@ -18,12 +18,8 @@
  */
 
 module dm_top #(
-    parameter int          NrHarts          = -1,
-    parameter int          AxiIdWidth       = -1,
-    parameter int          AxiAddrWidth     = -1,
-    parameter int          AxiDataWidth     = -1,
-    parameter int          AxiUserWidth     = -1,
-    parameter int          BusWidth         = -1,
+    parameter int                 NrHarts          = -1,
+    parameter int                 BusWidth         = -1,
     parameter logic [NrHarts-1:0] Selectable_Harts = -1
     /*
         PULP RISC-V cores have not continguos MHARTID.
@@ -53,14 +49,14 @@ module dm_top #(
     input  logic [BusWidth-1:0]   slave_wdata_i,
     output logic [BusWidth-1:0]   slave_rdata_o,
 
-    output logic                   master_req_o,
-    output logic [BusWidth-1:0]    master_add_o,
-    output logic                   master_we_o,
-    output logic [BusWidth-1:0]    master_wdata_o,
-    output logic [BusWidth/8-1:0]  master_be_o,
-    input  logic                   master_gnt_i,
-    input  logic                   master_r_valid_i,
-    input  logic [BusWidth-1:0]    master_r_rdata_i,
+    output logic                  master_req_o,
+    output logic [BusWidth-1:0]   master_add_o,
+    output logic                  master_we_o,
+    output logic [BusWidth-1:0]   master_wdata_o,
+    output logic [BusWidth/8-1:0] master_be_o,
+    input  logic                  master_gnt_i,
+    input  logic                  master_r_valid_i,
+    input  logic [BusWidth-1:0]   master_r_rdata_i,
 
     // Connection to DTM - compatible to RocketChip Debug Module
     input  logic                  dmi_rst_ni,
@@ -108,8 +104,6 @@ module dm_top #(
     logic                             sberror_valid;
     logic [2:0]                       sberror;
 
-    localparam MaxNrHarts = 1024;
-
 
     // Debug Ctrl for each hart -> I haven't found a better way to
     // parameterize this
@@ -120,8 +114,7 @@ module dm_top #(
     dm_csrs #(
         .NrHarts(NrHarts),
         .BusWidth(BusWidth),
-        .Selectable_Harts(Selectable_Harts),
-        .MaxNrHarts(MaxNrHarts)
+        .Selectable_Harts(Selectable_Harts)
     ) i_dm_csrs (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
@@ -204,8 +197,7 @@ module dm_top #(
     dm_mem #(
         .NrHarts(NrHarts),
         .BusWidth(BusWidth),
-        .Selectable_Harts(Selectable_Harts),
-        .MaxNrHarts(MaxNrHarts)
+        .Selectable_Harts(Selectable_Harts)
     ) i_dm_mem (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
