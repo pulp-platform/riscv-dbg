@@ -4,7 +4,8 @@ from string import Template
 import argparse
 import os.path
 import sys
-from bitstring import ConstBitStream, BitArray, BitStream
+import binascii
+
 
 parser = argparse.ArgumentParser(description='Convert binary file to verilog rom')
 parser.add_argument('filename', metavar='filename', nargs=1,
@@ -77,16 +78,14 @@ $content
 """
 
 def read_bin():
-    s = ConstBitStream(filename=filename + ".img")
-    rom = []
-    try:
-        while True:
-            rom.append(s.read("hex:8"))
-    except Exception as e:
-        pass
+
+    with open(filename + ".img", 'rb') as f:
+        rom = binascii.hexlify(f.read())
+        rom = map(''.join, zip(rom[::2], rom[1::2]))
+
 
     # align to 64 bit
-    align = (int((len(rom) + 7) / 8 )) * 8
+    align = (int((len(rom) + 7) / 8 )) * 8;
 
     for i in range(len(rom), align):
         rom.append("00")
@@ -125,3 +124,4 @@ with open(filename + ".sv", "w") as f:
     f.write(license)
     s = Template(module)
     f.write(s.substitute(filename=filename, size=int(len(rom)/8), content=rom_str))
+

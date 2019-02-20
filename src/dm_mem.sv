@@ -19,8 +19,7 @@
 module dm_mem #(
     parameter int                 NrHarts          = -1,
     parameter int                 BusWidth         = -1,
-    parameter logic [NrHarts-1:0] Selectable_Harts = -1,
-    parameter int                 MaxNrHarts       = -1
+    parameter logic [NrHarts-1:0] Selectable_Harts = -1
 )(
     input  logic                             clk_i,       // Clock
     input  logic                             rst_ni,      // debug module reset
@@ -388,11 +387,13 @@ module dm_mem #(
         endcase
     end
 
+    logic [63:0] rom_addr;
+    assign rom_addr = addr_i;
     debug_rom i_debug_rom (
         .clk_i,
         .req_i,
-        .addr_i  ( {32'b0, addr_i} ),
-        .rdata_o ( rom_rdata       )
+        .addr_i  ( rom_addr  ),
+        .rdata_o ( rom_rdata )
     );
 
     // ROM starts at the HaltAddress of the core e.g.: it immediately jumps to
@@ -414,19 +415,18 @@ module dm_mem #(
         end
     end
 
-    genvar SEL_ID;
     generate
-    for(SEL_ID=0;SEL_ID < MaxNrHarts;SEL_ID=SEL_ID+1) begin
-        always_ff @(posedge clk_i or negedge rst_ni) begin
-            if (~rst_ni) begin
-                halted_q[SEL_ID]   <= 1'b0;
-                resuming_q[SEL_ID] <= 1'b0;
-            end else begin
-                halted_q[SEL_ID]   <= Selectable_Harts[SEL_ID] ? halted_d[SEL_ID]   : 1'b0;
-                resuming_q[SEL_ID] <= Selectable_Harts[SEL_ID] ? resuming_d[SEL_ID] : 1'b0;
-            end
-        end
-    end
+      for(genvar k=0;k < NrHarts; k++) begin
+          always_ff @(posedge clk_i or negedge rst_ni) begin
+              if (~rst_ni) begin
+                  halted_q[k]   <= 1'b0;
+                  resuming_q[k] <= 1'b0;
+              end else begin
+                  halted_q[k]   <= Selectable_Harts[k] ? halted_d[k]   : 1'b0;
+                  resuming_q[k] <= Selectable_Harts[k] ? resuming_d[k] : 1'b0;
+              end
+          end
+      end
     endgenerate
 
 endmodule
