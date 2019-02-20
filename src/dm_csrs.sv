@@ -18,8 +18,7 @@
 module dm_csrs #(
     parameter int                 NrHarts          = -1,
     parameter int                 BusWidth         = -1,
-    parameter logic [NrHarts-1:0] Selectable_Harts = -1,
-    parameter int                 MaxNrHarts       = -1
+    parameter logic [NrHarts-1:0] Selectable_Harts = -1
 ) (
     input  logic                              clk_i,              // Clock
     input  logic                              rst_ni,             // Asynchronous reset active low
@@ -550,17 +549,16 @@ module dm_csrs #(
     end
 
 
-    genvar SEL_ID;
     generate
-    for(SEL_ID=0;SEL_ID < MaxNrHarts;SEL_ID=SEL_ID+1) begin
-        always_ff @(posedge clk_i or negedge rst_ni) begin
-            if (~rst_ni) begin
-                havereset_q[SEL_ID]  <= 1'b1;
-            end else begin
-                havereset_q[SEL_ID]  <= Selectable_Harts[SEL_ID] ? havereset_d[SEL_ID]   : 1'b0;
-            end
-        end
-    end
+      for(genvar k=0;k < NrHarts;k++) begin
+          always_ff @(posedge clk_i or negedge rst_ni) begin
+              if (~rst_ni) begin
+                  havereset_q[k]  <= 1'b1;
+              end else begin
+                  havereset_q[k]  <= Selectable_Harts[k] ? havereset_d[k]   : 1'b0;
+              end
+          end
+      end
     endgenerate
 
 ///////////////////////////////////////////////////////
@@ -573,7 +571,7 @@ module dm_csrs #(
     haltsum: assert property (
         @(posedge clk_i) disable iff (~rst_ni) (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) |->
             !({1'b0, dmi_req_i.addr} inside {dm::HaltSum0, dm::HaltSum1, dm::HaltSum2, dm::HaltSum3}))
-                else $warning("Haltsums are not implemented yet and always return 0.");
+                else $warning("Haltsums have not been properly tested yet.");
 `endif
 //pragma translate_on
 
