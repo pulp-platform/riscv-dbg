@@ -54,10 +54,11 @@ module dmi_jtag_tap #(
     // to submodule
     assign dmi_tdi_o = td_i;
 
-    enum logic [3:0] { TestLogicReset, RunTestIdle, SelectDrScan,
+    typedef enum logic [3:0] { TestLogicReset, RunTestIdle, SelectDrScan,
                      CaptureDr, ShiftDr, Exit1Dr, PauseDr, Exit2Dr,
                      UpdateDr, SelectIrScan, CaptureIr, ShiftIr,
-                     Exit1Ir, PauseIr, Exit2Ir, UpdateIr } tap_state_q, tap_state_d;
+                     Exit1Ir, PauseIr, Exit2Ir, UpdateIr } tap_state_e;
+    tap_state_e tap_state_q, tap_state_d;
 
     typedef enum logic [IrLength-1:0] {
         BYPASS0   = 'h0,
@@ -65,7 +66,7 @@ module dmi_jtag_tap #(
         DTMCSR    = 'h10,
         DMIACCESS = 'h11,
         BYPASS1   = 'h1f
-    } ir_reg_t;
+    } ir_reg_e;
 
     typedef struct packed {
         logic [31:18] zero1;
@@ -82,7 +83,7 @@ module dmi_jtag_tap #(
     // IR logic
     // ----------------
     logic [IrLength-1:0]  jtag_ir_shift_d, jtag_ir_shift_q; // shift register
-    ir_reg_t              jtag_ir_d, jtag_ir_q; // IR register -> this gets captured from shift register upon update_ir
+    ir_reg_e              jtag_ir_d, jtag_ir_q; // IR register -> this gets captured from shift register upon update_ir
     logic capture_ir, shift_ir, pause_ir, update_ir;
 
     always_comb begin
@@ -101,7 +102,7 @@ module dmi_jtag_tap #(
 
         // update IR register
         if (update_ir) begin
-            jtag_ir_d = ir_reg_t'(jtag_ir_shift_q);
+            jtag_ir_d = ir_reg_e'(jtag_ir_shift_q);
         end
 
         // synchronous test-logic reset

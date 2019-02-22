@@ -77,7 +77,7 @@ package dm;
         SBData2      = 8'h3E,
         SBData3      = 8'h3F,
         HaltSum0     = 8'h40
-    } dm_csr_t;
+    } dm_csr_e;
 
     // debug causes
     localparam logic [2:0] CauseBreakpoint = 3'h1;
@@ -136,7 +136,7 @@ package dm;
     typedef enum logic [2:0] {  CmdErrNone, CmdErrBusy, CmdErrNotSupported,
                                 CmdErrorException, CmdErrorHaltResume,
                                 CmdErrorBus, CmdErrorOther = 7
-                             } cmderr_t;
+                             } cmderr_e;
 
     typedef struct packed {
         logic [31:29] zero3;
@@ -144,7 +144,7 @@ package dm;
         logic [23:13] zero2;
         logic         busy;
         logic         zero1;
-        cmderr_t      cmderr;
+        cmderr_e      cmderr;
         logic [7:4]   zero0;
         logic [3:0]   datacount;
     } abstractcs_t;
@@ -153,10 +153,10 @@ package dm;
                                  AccessRegister = 8'h0,
                                  QuickAccess    = 8'h1,
                                  AccessMemory   = 8'h2
-                             } cmd_t;
+                             } cmd_e;
 
     typedef struct packed {
-        cmd_t        cmdtype;
+        cmd_e        cmdtype;
         logic [23:0] control;
     } command_t;
 
@@ -181,7 +181,7 @@ package dm;
         DTM_NOP   = 2'h0,
         DTM_READ  = 2'h1,
         DTM_WRITE = 2'h2
-    } dtm_op_t;
+    } dtm_op_e;
 
     typedef struct packed {
         logic [31:29] sbversion;
@@ -205,7 +205,7 @@ package dm;
 
     typedef struct packed {
         logic [6:0]  addr;
-        dtm_op_t     op;
+        dtm_op_e     op;
         logic [31:0] data;
     } dmi_req_t;
 

@@ -43,7 +43,7 @@ module dm_mem #(
     input  logic                             cmd_valid_i,
     input  dm::command_t                     cmd_i,
     output logic                             cmderror_valid_o,
-    output dm::cmderr_t                      cmderror_o,
+    output dm::cmderr_e                      cmderror_o,
     output logic                             cmdbusy_o,
     // data interface
 

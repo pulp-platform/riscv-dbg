@@ -68,9 +68,10 @@ module dmi_jtag #(
     typedef enum logic [1:0] {
                                 DMINoError = 2'h0, DMIReservedError = 2'h1,
                                 DMIOPFailed = 2'h2, DMIBusy = 2'h3
-                             } dmi_error_t;
+                             } dmi_error_e;
 
-    enum logic [2:0] { Idle, Read, WaitReadValid, Write, WaitWriteValid } state_d, state_q;
+    typedef enum logic [2:0] { Idle, Read, WaitReadValid, Write, WaitWriteValid } state_e;
+    state_e state_d, state_q;
 
     logic [$bits(dmi_t)-1:0] dr_d, dr_q;
     logic [6:0] address_d, address_q;
@@ -85,7 +86,7 @@ module dmi_jtag #(
     assign dmi_resp_ready = 1'b1;
 
     logic error_dmi_busy;
-    dmi_error_t error_d, error_q;
+    dmi_error_e error_d, error_q;
 
     always_comb begin
         error_dmi_busy = 1'b0;
@@ -104,9 +105,9 @@ module dmi_jtag #(
                     // save address and value
                     address_d = dmi.address;
                     data_d = dmi.data;
-                    if (dm::dtm_op_t'(dmi.op) == dm::DTM_READ) begin
+                    if (dm::dtm_op_e'(dmi.op) == dm::DTM_READ) begin
                         state_d = Read;
-                    end else if (dm::dtm_op_t'(dmi.op) == dm::DTM_WRITE) begin
+                    end else if (dm::dtm_op_e'(dmi.op) == dm::DTM_WRITE) begin
                         state_d = Write;
                     end
                     // else this is a nop and we can stay here
