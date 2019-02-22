@@ -20,15 +20,15 @@
 module dm_top #(
     parameter int                 NrHarts          = -1,
     parameter int                 BusWidth         = -1,
-    parameter logic [NrHarts-1:0] Selectable_Harts = -1
+    parameter logic [NrHarts-1:0] SelectableHarts  = -1
     /*
         PULP RISC-V cores have not continguos MHARTID.
         This leads to set the number of HARTS >= the maximum value of the MHARTID.
         In this case, the MHARD ID is {FC_Core_CLUSTER_ID,1'b0,FC_Core_CORE_ID} --> 996 (1024 chosen as power of 2)
         To avoid paying 1024 flip flop for each number of harts's related register, we implemented
-        the masking parameter, aka SELECTABLE_HARTS.
+        the masking parameter, aka SelectableHarts.
         In One-Hot-Encoding way, you select 1 when that MHARTID-related HART can actally be selected.
-        e.g. if you have 2 core with MHART 10 and 5, you select NrHarts=16 and SELECTABLE_HARTS = (1<<10) | (1<<5).
+        e.g. if you have 2 core with MHART 10 and 5, you select NrHarts=16 and SelectableHarts = (1<<10) | (1<<5).
         This mask will be used to generated only the flip flop needed and the constant-propagator engine of the synthesizer
         will remove the other flip flops and related logic.
     */
@@ -114,7 +114,7 @@ module dm_top #(
     dm_csrs #(
         .NrHarts(NrHarts),
         .BusWidth(BusWidth),
-        .Selectable_Harts(Selectable_Harts)
+        .SelectableHarts(SelectableHarts)
     ) i_dm_csrs (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
@@ -197,7 +197,7 @@ module dm_top #(
     dm_mem #(
         .NrHarts(NrHarts),
         .BusWidth(BusWidth),
-        .Selectable_Harts(Selectable_Harts)
+        .SelectableHarts(SelectableHarts)
     ) i_dm_mem (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),

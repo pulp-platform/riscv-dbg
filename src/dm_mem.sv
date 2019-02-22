@@ -19,7 +19,7 @@
 module dm_mem #(
     parameter int                 NrHarts          = -1,
     parameter int                 BusWidth         = -1,
-    parameter logic [NrHarts-1:0] Selectable_Harts = -1
+    parameter logic [NrHarts-1:0] SelectableHarts  = -1
 )(
     input  logic                             clk_i,       // Clock
     input  logic                             rst_ni,      // debug module reset
@@ -422,8 +422,8 @@ module dm_mem #(
                   halted_q[k]   <= 1'b0;
                   resuming_q[k] <= 1'b0;
               end else begin
-                  halted_q[k]   <= Selectable_Harts[k] ? halted_d[k]   : 1'b0;
-                  resuming_q[k] <= Selectable_Harts[k] ? resuming_d[k] : 1'b0;
+                  halted_q[k]   <= SelectableHarts[k] ? halted_d[k]   : 1'b0;
+                  resuming_q[k] <= SelectableHarts[k] ? resuming_d[k] : 1'b0;
               end
           end
       end
