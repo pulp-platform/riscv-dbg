@@ -18,7 +18,7 @@
 module dm_csrs #(
     parameter int                 NrHarts          = -1,
     parameter int                 BusWidth         = -1,
-    parameter logic [NrHarts-1:0] Selectable_Harts = -1
+    parameter logic [NrHarts-1:0] SelectableHarts  = -1
 ) (
     input  logic                              clk_i,              // Clock
     input  logic                              rst_ni,             // Asynchronous reset active low
@@ -555,7 +555,7 @@ module dm_csrs #(
               if (~rst_ni) begin
                   havereset_q[k]  <= 1'b1;
               end else begin
-                  havereset_q[k]  <= Selectable_Harts[k] ? havereset_d[k]   : 1'b0;
+                  havereset_q[k]  <= SelectableHarts[k] ? havereset_d[k]   : 1'b0;
               end
           end
       end
