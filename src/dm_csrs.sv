@@ -47,7 +47,7 @@ module dm_csrs #(
     output logic                              cmd_valid_o,       // debugger is writing to the command field
     output dm::command_t                      cmd_o,             // abstract command
     input  logic                              cmderror_valid_i,  // an error occured
-    input  dm::cmderr_t                       cmderror_i,        // this error occured
+    input  dm::cmderr_e                       cmderror_i,        // this error occured
     input  logic                              cmdbusy_i,         // cmd is currently busy executing
 
     output logic [dm::ProgBufSize-1:0][31:0]  progbuf_o, // to system bus
@@ -78,8 +78,8 @@ module dm_csrs #(
 );
     // the amount of bits we need to represent all harts
     localparam HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
-    dm::dtm_op_t dtm_op;
-    assign dtm_op = dm::dtm_op_t'(dmi_req_i.op);
+    dm::dtm_op_e dtm_op;
+    assign dtm_op = dm::dtm_op_e'(dmi_req_i.op);
 
     logic        resp_queue_full;
     logic        resp_queue_empty;
@@ -87,8 +87,8 @@ module dm_csrs #(
     logic        resp_queue_pop;
     logic [31:0] resp_queue_data;
 
-    localparam dm::dm_csr_t DataEnd = dm::dm_csr_t'((dm::Data0 + {4'b0, dm::DataCount}));
-    localparam dm::dm_csr_t ProgBufEnd = dm::dm_csr_t'((dm::ProgBuf0 + {4'b0, dm::ProgBufSize}));
+    localparam dm::dm_csr_e DataEnd = dm::dm_csr_e'((dm::Data0 + {4'b0, dm::DataCount}));
+    localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'((dm::ProgBuf0 + {4'b0, dm::ProgBufSize}));
 
     logic [31:0] haltsum0, haltsum1, haltsum2, haltsum3;
     logic [NrHarts/2**5 :0][31:0] halted_reshaped0;
@@ -132,7 +132,7 @@ module dm_csrs #(
     dm::dmstatus_t      dmstatus;
     dm::dmcontrol_t     dmcontrol_d, dmcontrol_q;
     dm::abstractcs_t    abstractcs;
-    dm::cmderr_t        cmderr_d, cmderr_q;
+    dm::cmderr_e        cmderr_d, cmderr_q;
     dm::command_t       command_d, command_q;
     dm::abstractauto_t  abstractauto_d, abstractauto_q;
     dm::sbcs_t          sbcs_d, sbcs_q;
@@ -295,7 +295,7 @@ module dm_csrs #(
 
         // write
         if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_WRITE) begin
-            unique case (dm::dm_csr_t'({1'b0, dmi_req_i.addr})) inside
+            unique case (dm::dm_csr_e'({1'b0, dmi_req_i.addr})) inside
                 [(dm::Data0):DataEnd]: begin
                     // attempts to write them while busy is set does not change their value
                     if (!cmdbusy_i && dm::DataCount > 0) begin
@@ -325,7 +325,7 @@ module dm_csrs #(
                     a_abstractcs = dm::abstractcs_t'(dmi_req_i.data);
                     // reads during abstract command execution are not allowed
                     if (!cmdbusy_i) begin
-                        cmderr_d = dm::cmderr_t'(~a_abstractcs.cmderr & cmderr_q);
+                        cmderr_d = dm::cmderr_e'(~a_abstractcs.cmderr & cmderr_q);
                     end else if (cmderr_q == dm::CmdErrNone) begin
                         cmderr_d = dm::CmdErrBusy;
                     end

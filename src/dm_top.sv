@@ -80,7 +80,7 @@ module dm_top #(
     dm::command_t                     cmd;
 
     logic                             cmderror_valid;
-    dm::cmderr_t                      cmderror;
+    dm::cmderr_e                      cmderror;
     logic                             cmdbusy;
     logic [dm::ProgBufSize-1:0][31:0] progbuf;
     logic [dm::DataCount-1:0][31:0]   data_csrs_mem;
