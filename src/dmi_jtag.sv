@@ -16,7 +16,9 @@
  *
  */
 
-module dmi_jtag (
+module dmi_jtag #(
+    parameter logic [31:0] IdcodeValue = 32'h00000001
+) (
     input  logic         clk_i,      // DMI Clock
     input  logic         rst_ni,     // Asynchronous reset active low
     input  logic         testmode_i,
@@ -210,7 +212,8 @@ module dmi_jtag (
     // TAP
     // ---------
     dmi_jtag_tap #(
-        .IrLength (5)
+        .IrLength (5),
+        .IdcodeValue(IdcodeValue)
     ) i_dmi_jtag_tap (
         .tck_i,
         .tms_i,
