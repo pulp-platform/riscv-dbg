@@ -17,7 +17,13 @@
  */
 
 module dmi_jtag_tap #(
-    parameter int IrLength = 5
+    parameter int IrLength = 5,
+    // JTAG IDCODE Value
+    parameter logic [31:0] IdcodeValue = 32'h00000001
+    // xxxx             version
+    // xxxxxxxxxxxxxxxx part number
+    // xxxxxxxxxxx      manufacturer id
+    // 1                required by standard
 )(
     input  logic        tck_i,    // JTAG test clock pad
     input  logic        tms_i,    // JTAG test mode select pad
@@ -121,12 +127,6 @@ module dmi_jtag_tap #(
     // - Bypass
     // - IDCODE
     // - DTM CS
-    // Define IDCODE Value
-    localparam IDCODE_VALUE = 32'h249511C3;
-    // 0001             version
-    // 0100100101010001 part number (IQ)
-    // 00011100001      manufacturer id (flextronics)
-    // 1                required by standard
     logic [31:0] idcode_d, idcode_q;
     logic        idcode_select;
     logic        bypass_select;
@@ -141,7 +141,7 @@ module dmi_jtag_tap #(
         dtmcs_d  = dtmcs_q;
 
         if (capture_dr_o) begin
-            if (idcode_select) idcode_d = IDCODE_VALUE;
+            if (idcode_select) idcode_d = IdcodeValue;
             if (bypass_select) bypass_d = 1'b0;
             if (dtmcs_select_o) begin
                 dtmcs_d  = '{
@@ -164,7 +164,7 @@ module dmi_jtag_tap #(
         end
 
         if (test_logic_reset_o) begin
-            idcode_d = IDCODE_VALUE;
+            idcode_d = IdcodeValue;
             bypass_d = 1'b0;
         end
     end
@@ -326,7 +326,7 @@ module dmi_jtag_tap #(
     always_ff @(posedge tck_i or negedge trst_ni) begin
         if (~trst_ni) begin
             tap_state_q <= RunTestIdle;
-            idcode_q    <= IDCODE_VALUE;
+            idcode_q    <= IdcodeValue;
             bypass_q    <= 1'b0;
             dtmcs_q     <= '0;
         end else begin
