@@ -188,11 +188,13 @@ module dm_csrs #(
         dmstatus.allnonexistent = (hartsel_o > NrHarts[19:0] - 1) ? 1'b1 : 1'b0;
         dmstatus.anynonexistent = (hartsel_o > NrHarts[19:0] - 1) ? 1'b1 : 1'b0;
 
-        dmstatus.allhalted    = halted_i[selected_hart];
-        dmstatus.anyhalted    = halted_i[selected_hart];
+        // We are not allowed to be in multiple states at once. This is a to
+        // make the running/halted and unavailable states exclusive.
+        dmstatus.allhalted    = halted_i[selected_hart] & ~unavailable_i[selected_hart];
+        dmstatus.anyhalted    = halted_i[selected_hart] & ~unavailable_i[selected_hart];
 
-        dmstatus.allrunning   = ~halted_i[selected_hart];
-        dmstatus.anyrunning   = ~halted_i[selected_hart];
+        dmstatus.allrunning   = ~halted_i[selected_hart] & ~unavailable_i[selected_hart];
+        dmstatus.anyrunning   = ~halted_i[selected_hart] & ~unavailable_i[selected_hart];
 
         // abstractcs
         abstractcs = '0;
