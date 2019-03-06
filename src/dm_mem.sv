@@ -57,6 +57,7 @@ module dm_mem #(
 );
 
     localparam int HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
+    localparam int MaxAar = (BusWidth == 64) ? 4 : 3;
     localparam DbgAddressBits  = 12;
     localparam logic [DbgAddressBits-1:0] DataBase = (dm::DataAddr);
     localparam logic [DbgAddressBits-1:0] DataEnd = (dm::DataAddr + 4*dm::DataCount);
@@ -158,15 +159,18 @@ module dm_mem #(
             end
         endcase
 
+        // only signal once that cmd is unsupported so that we can clear cmderr
+        // in subsequent writes to abstractcs
+        if (unsupported_command && cmd_valid_i) begin
+            cmderror_valid_o = 1'b1;
+            cmderror_o = dm::CmdErrNotSupported;
+        end
+
         if (exception) begin
             cmderror_valid_o = 1'b1;
             cmderror_o = dm::CmdErrorException;
         end
 
-        if (unsupported_command) begin
-            cmderror_valid_o = 1'b1;
-            cmderror_o = dm::CmdErrNotSupported;
-        end
     end
 
     // read/write logic
@@ -296,10 +300,11 @@ module dm_mem #(
             // Access Register
             // --------------------
             dm::AccessRegister: begin
-                if (ac_ar.aarsize < 4 && ac_ar.transfer && ac_ar.write) begin
+                if (ac_ar.aarsize < MaxAar && ac_ar.transfer && ac_ar.write) begin
                     // store a0 in dscratch1
                     abstract_cmd[0][31:0] = riscv::csrw(riscv::CSR_DSCRATCH1, 10);
                     // this range is reserved
+                    // TODO: don't go illegal, instead set cmderr
                     if (ac_ar.regno[15:14] != '0) begin
                         abstract_cmd[0][31:0] = riscv::illegal();
                     // A0 access needs to be handled separately, as we use A0 to load the DM address offset
@@ -333,7 +338,7 @@ module dm_mem #(
                         // restore s0 again from dscratch
                         abstract_cmd[3][63:32] = riscv::csrr(riscv::CSR_DSCRATCH0, 8);
                     end
-                end else if (ac_ar.aarsize < 4 && ac_ar.transfer && !ac_ar.write) begin
+                end else if (ac_ar.aarsize < MaxAar && ac_ar.transfer && !ac_ar.write) begin
                     // store a0 in dscratch1
                     abstract_cmd[0][31:0]  = riscv::csrw(riscv::CSR_DSCRATCH1, 10);
                     // this range is reserved
@@ -370,13 +375,24 @@ module dm_mem #(
                         // restore s0 again from dscratch
                         abstract_cmd[3][63:32] = riscv::csrr(riscv::CSR_DSCRATCH0, 8);
                     end
+                end else if (ac_ar.aarsize >= MaxAar || ac_ar.aarpostincrement == 1'b1) begin
+                    // this should happend when e.g. ac_ar.aarsize >= MaxAar
+                    // Openocd will try to do an access with aarsize=64 bits
+                    // first before falling back to 32 bits.
+                    abstract_cmd[0][31:0]  = riscv::ebreak(); // we leave asap
+                    unsupported_command = 1'b1;
+
                 end
 
-                // check whether we need to execute the program buffer
-                if (ac_ar.postexec) begin
+                // Check whether we need to execute the program buffer. When we
+                // get an unsupported command we really should abort instead of
+                // still trying to execute the program buffer, makes it easier
+                // for the debugger to recover
+                if (ac_ar.postexec && !unsupported_command) begin
                     // issue a nop, we will automatically run into the program buffer
                     abstract_cmd[4][63:32] = riscv::nop();
                 end
+
             end
             // not supported at the moment
             // dm::QuickAccess:;
