@@ -134,6 +134,7 @@ module dm_csrs #(
     dm::abstractcs_t    abstractcs;
     dm::cmderr_e        cmderr_d, cmderr_q;
     dm::command_t       command_d, command_q;
+    logic               cmd_valid_d, cmd_valid_q;
     dm::abstractauto_t  abstractauto_d, abstractauto_q;
     dm::sbcs_t          sbcs_d, sbcs_q;
     logic [63:0]        sbaddr_d, sbaddr_q;
@@ -219,7 +220,7 @@ module dm_csrs #(
         sbdata_d    = sbdata_q;
 
         resp_queue_data         = 32'b0;
-        cmd_valid_o             = 1'b0;
+        cmd_valid_d             = 1'b0;
         sbaddress_write_valid_o = 1'b0;
         sbdata_read_valid_o     = 1'b0;
         sbdata_write_valid_o    = 1'b0;
@@ -233,7 +234,7 @@ module dm_csrs #(
                     end
                     if (!cmdbusy_i) begin
                         // check whether we need to re-execute the command (just give a cmd_valid)
-                        cmd_valid_o = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] - int'(dm::Data0)];
+                        cmd_valid_d = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] - int'(dm::Data0)];
                     end
                 end
                 dm::DMControl:    resp_queue_data = dmcontrol_q;
@@ -248,7 +249,7 @@ module dm_csrs #(
                     if (!cmdbusy_i) begin
                         // check whether we need to re-execute the command (just give a cmd_valid)
                         // TODO(zarubaf): check if offset is correct - without it this may assign Xes
-                        cmd_valid_o = abstractauto_q.autoexecprogbuf[dmi_req_i.addr[3:0]+16];
+                        cmd_valid_d = abstractauto_q.autoexecprogbuf[dmi_req_i.addr[3:0]+16];
                     end
                 end
                 dm::HaltSum0: resp_queue_data = haltsum0;
@@ -303,7 +304,7 @@ module dm_csrs #(
                     if (!cmdbusy_i && dm::DataCount > 0) begin
                         data_d[dmi_req_i.addr[4:0]] = dmi_req_i.data;
                         // check whether we need to re-execute the command (just give a cmd_valid)
-                        cmd_valid_o = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] - int'(dm::Data0)];
+                        cmd_valid_d = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] - int'(dm::Data0)];
                     end
                 end
                 dm::DMControl: begin
@@ -336,7 +337,7 @@ module dm_csrs #(
                 dm::Command: begin
                     // writes are ignored if a command is already busy
                     if (!cmdbusy_i) begin
-                        cmd_valid_o = 1'b1;
+                        cmd_valid_d = 1'b1;
                         command_d = dm::command_t'(dmi_req_i.data);
                     // if there was an attempted to write during a busy execution
                     // and the cmderror field is zero set the busy error
@@ -359,7 +360,7 @@ module dm_csrs #(
                         // check whether we need to re-execute the command (just give a cmd_valid)
                         // this should probably throw an error if executed during another command was busy
                         // TODO(zarubaf): check if offset is correct - without it this may assign Xes
-                        cmd_valid_o = abstractauto_q.autoexecprogbuf[dmi_req_i.addr[3:0]+16];
+                        cmd_valid_d = abstractauto_q.autoexecprogbuf[dmi_req_i.addr[3:0]+16];
                     end
                 end
                 dm::SBCS: begin
@@ -450,7 +451,7 @@ module dm_csrs #(
         // static values for dcsr
         sbcs_d.sbversion            = 3'b1;
         sbcs_d.sbbusy               = sbbusy_i;
-        sbcs_d.sbasize              = BusWidth; // bus is 64 bit wide
+        sbcs_d.sbasize              = BusWidth;
         sbcs_d.sbaccess128          = 1'b0;
         sbcs_d.sbaccess64           = BusWidth == 64;
         sbcs_d.sbaccess32           = BusWidth == 32;
@@ -469,10 +470,11 @@ module dm_csrs #(
         resumereq_o[selected_hart] = dmcontrol_q.resumereq;
     end
 
-    assign dmactive_o = dmcontrol_q.dmactive;
-    assign cmd_o      = command_q;
-    assign progbuf_o  = progbuf_q;
-    assign data_o     = data_q;
+    assign dmactive_o  = dmcontrol_q.dmactive;
+    assign cmd_o       = command_q;
+    assign cmd_valid_o = cmd_valid_q;
+    assign progbuf_o   = progbuf_q;
+    assign data_o      = data_q;
 
     assign resp_queue_pop = dmi_resp_ready_i & ~resp_queue_empty;
 
@@ -530,6 +532,7 @@ module dm_csrs #(
                 dmcontrol_q.dmactive         <= dmcontrol_d.dmactive;
                 cmderr_q                     <= dm::CmdErrNone;
                 command_q                    <= '0;
+                cmd_valid_q                  <= '0;
                 abstractauto_q               <= '0;
                 progbuf_q                    <= '0;
                 data_q                       <= '0;
@@ -540,6 +543,7 @@ module dm_csrs #(
                 dmcontrol_q                  <= dmcontrol_d;
                 cmderr_q                     <= cmderr_d;
                 command_q                    <= command_d;
+                cmd_valid_q                  <= cmd_valid_d;
                 abstractauto_q               <= abstractauto_d;
                 progbuf_q                    <= progbuf_d;
                 data_q                       <= data_d;
