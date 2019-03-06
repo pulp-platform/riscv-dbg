@@ -224,4 +224,12 @@ module dm_top #(
         .rdata_o                 ( slave_rdata_o         )
     );
 
+
+`ifndef VERILATOR
+    initial begin
+        assert (BusWidth == 32 || BusWidth == 64)
+            else $fatal(1, "DM needs a bus width of either 32 or 64 bits");
+    end
+`endif
+
 endmodule
