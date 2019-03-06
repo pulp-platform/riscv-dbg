@@ -169,7 +169,7 @@ package dm;
     typedef struct packed {
         logic         zero1;
         logic [22:20] aarsize;
-        logic         zero0;
+        logic         aarpostincrement;
         logic         postexec;
         logic         transfer;
         logic         write;
