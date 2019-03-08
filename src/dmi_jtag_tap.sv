@@ -113,7 +113,7 @@ module dmi_jtag_tap #(
     end
 
     always_ff @(posedge tck_i, negedge trst_ni) begin
-        if (~trst_ni) begin
+        if (!trst_ni) begin
             jtag_ir_shift_q <= '0;
             jtag_ir_q       <= IDCODE;
         end else begin
@@ -226,7 +226,7 @@ module dmi_jtag_tap #(
 
     // TDO changes state at negative edge of TCK
     always_ff @(posedge tck_n, negedge trst_ni) begin
-        if (~trst_ni) begin
+        if (!trst_ni) begin
             td_o     <= 1'b0;
             tdo_oe_o <= 1'b0;
         end else begin
@@ -325,7 +325,7 @@ module dmi_jtag_tap #(
     end
 
     always_ff @(posedge tck_i or negedge trst_ni) begin
-        if (~trst_ni) begin
+        if (!trst_ni) begin
             tap_state_q <= RunTestIdle;
             idcode_q    <= IdcodeValue;
             bypass_q    <= 1'b0;

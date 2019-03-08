@@ -326,7 +326,7 @@ module axi_adapter #(
     // Registers
     // ----------------
     always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (~rst_ni) begin
+        if (!rst_ni) begin
             // start in flushing state and initialize the memory
             state_q       <= IDLE;
             cnt_q         <= '0;
