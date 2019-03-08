@@ -418,7 +418,7 @@ module dm_mem #(
 
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (~rst_ni) begin
+        if (!rst_ni) begin
             fwd_rom_q       <= 1'b0;
             rdata_q         <= '0;
             state_q         <= Idle;
@@ -434,7 +434,7 @@ module dm_mem #(
     generate
       for(genvar k=0;k < NrHarts; k++) begin
           always_ff @(posedge clk_i or negedge rst_ni) begin
-              if (~rst_ni) begin
+              if (!rst_ni) begin
                   halted_q[k]   <= 1'b0;
                   resuming_q[k] <= 1'b0;
               end else begin

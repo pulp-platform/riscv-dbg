@@ -140,7 +140,7 @@ module dm_sba #(
     end
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (~rst_ni) begin
+        if (!rst_ni) begin
             state_q <= Idle;
         end else begin
             state_q <= state_d;
