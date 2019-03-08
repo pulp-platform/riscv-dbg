@@ -194,7 +194,7 @@ module dmi_jtag #(
     end
 
     always_ff @(posedge tck_i or negedge trst_ni) begin
-        if (~trst_ni) begin
+        if (!trst_ni) begin
             dr_q      <= '0;
             state_q   <= Idle;
             address_q <= '0;

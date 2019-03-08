@@ -503,7 +503,7 @@ module dm_csrs #(
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
         // PoR
-        if (~rst_ni) begin
+        if (!rst_ni) begin
             dmcontrol_q    <= '0;
             // this is the only write-able bit during reset
             cmderr_q       <= dm::CmdErrNone;
@@ -558,7 +558,7 @@ module dm_csrs #(
     generate
       for(genvar k=0;k < NrHarts;k++) begin
           always_ff @(posedge clk_i or negedge rst_ni) begin
-              if (~rst_ni) begin
+              if (!rst_ni) begin
                   havereset_q[k]  <= 1'b1;
               end else begin
                   havereset_q[k]  <= SelectableHarts[k] ? havereset_d[k]   : 1'b0;
@@ -575,7 +575,7 @@ module dm_csrs #(
 //pragma translate_off
 `ifndef VERILATOR
     haltsum: assert property (
-        @(posedge clk_i) disable iff (~rst_ni) (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) |->
+        @(posedge clk_i) disable iff (!rst_ni) (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) |->
             !({1'b0, dmi_req_i.addr} inside {dm::HaltSum0, dm::HaltSum1, dm::HaltSum2, dm::HaltSum3}))
                 else $warning("Haltsums have not been properly tested yet.");
 `endif
