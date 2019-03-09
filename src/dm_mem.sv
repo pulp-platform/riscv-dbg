@@ -305,9 +305,9 @@ module dm_mem #(
                     // store a0 in dscratch1
                     abstract_cmd[0][31:0] = riscv::csrw(riscv::CSR_DSCRATCH1, 10);
                     // this range is reserved
-                    // TODO: don't go illegal, instead set cmderr
                     if (ac_ar.regno[15:14] != '0) begin
-                        abstract_cmd[0][31:0] = riscv::illegal();
+                        abstract_cmd[0][31:0] = riscv::ebreak(); // we leave asap
+                        unsupported_command = 1'b1;
                     // A0 access needs to be handled separately, as we use A0 to load the DM address offset
                     // need to access DSCRATCH1 in this case
                     end else if (ac_ar.regno[12] && (!ac_ar.regno[5]) && (ac_ar.regno[4:0] == 10)) begin
@@ -344,7 +344,8 @@ module dm_mem #(
                     abstract_cmd[0][31:0]  = riscv::csrw(riscv::CSR_DSCRATCH1, 10);
                     // this range is reserved
                     if (ac_ar.regno[15:14] != '0) begin
-                        abstract_cmd[0][31:0] = riscv::illegal();
+                        abstract_cmd[0][31:0] = riscv::ebreak(); // we leave asap
+                        unsupported_command = 1'b1;
                     // A0 access needs to be handled separately, as we use A0 to load the DM address offset
                     // need to access DSCRATCH1 in this case
                     end else if (ac_ar.regno[12] && (!ac_ar.regno[5]) && (ac_ar.regno[4:0] == 10)) begin
@@ -380,7 +381,7 @@ module dm_mem #(
                     // this should happend when e.g. ac_ar.aarsize >= MaxAar
                     // Openocd will try to do an access with aarsize=64 bits
                     // first before falling back to 32 bits.
-                    abstract_cmd[0][31:0]  = riscv::ebreak(); // we leave asap
+                    abstract_cmd[0][31:0] = riscv::ebreak(); // we leave asap
                     unsupported_command = 1'b1;
 
                 end
@@ -399,6 +400,7 @@ module dm_mem #(
             // dm::QuickAccess:;
             // dm::AccessMemory:;
             default: begin
+                abstract_cmd[0][31:0] = riscv::ebreak();
                 unsupported_command = 1'b1;
             end
         endcase
