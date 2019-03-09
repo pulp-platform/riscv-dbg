@@ -236,8 +236,9 @@ module dm_mem #(
 
                         // there is a command active so jump there
                         if (cmdbusy_o) begin
-                            // transfer not set is a shortcut to the program buffer
-                            if (!ac_ar.transfer) begin
+                            // transfer not set is a shortcut to the program buffer if postexec is set
+                            // keep this statement narrow to not catch invalid commands
+                            if (cmd_i.cmdtype == dm::AccessRegister && !ac_ar.transfer && ac_ar.postexec) begin
                                 rdata_d = {32'b0, riscv::jal(0, ProgBufBase-WhereTo)};
                             // this is a legit abstract cmd -> execute it
                             end else begin
