@@ -221,6 +221,7 @@ module dm_mem #(
                             end
                         end
                     end
+                    default ;
                 endcase
 
             // this is a read
