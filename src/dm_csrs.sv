@@ -103,29 +103,29 @@ module dm_csrs #(
     assign haltsum0         = halted_reshaped0[hartsel_o[19:5]];
     // haltsum1
     always_comb begin : p_reduction1
-      halted_flat1 = '1;
-      for (int k=0; k<NrHarts/2**5; k++) begin
-        halted_flat1[k] = &halted_reshaped0[k];
-      end
-      halted_reshaped1 = halted_flat1;
-      haltsum1         = halted_reshaped1[hartsel_o[19:10]];
+        halted_flat1 = '0;
+        for (int k=0; k<NrHarts/2**5+1; k++) begin
+            halted_flat1[k] = |halted_reshaped0[k];
+        end
+        halted_reshaped1 = halted_flat1;
+        haltsum1         = halted_reshaped1[hartsel_o[19:10]];
     end
     // haltsum2
     always_comb begin : p_reduction2
-      halted_flat2 = '1;
-      for (int k=0; k<NrHarts/2**10; k++) begin
-        halted_flat2[k] = &halted_reshaped1[k];
-      end
-      halted_reshaped2 = halted_flat2;
-      haltsum2         = halted_reshaped2[hartsel_o[19:15]];
+        halted_flat2 = '0;
+        for (int k=0; k<NrHarts/2**10+1; k++) begin
+            halted_flat2[k] = |halted_reshaped1[k];
+        end
+        halted_reshaped2 = halted_flat2;
+        haltsum2         = halted_reshaped2[hartsel_o[19:15]];
     end
     // haltsum3
     always_comb begin : p_reduction3
-      halted_flat3 = '1;
-      for (int k=0; k<NrHarts/2**15; k++) begin
-        halted_flat3[k] = &halted_reshaped2[k];
-      end
-      haltsum3 = halted_flat3;
+        halted_flat3 = '0;
+        for (int k=0; k<NrHarts/2**15+1; k++) begin
+            halted_flat3[k] = |halted_reshaped2[k];
+        end
+        haltsum3 = halted_flat3;
     end
 
 
