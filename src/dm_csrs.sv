@@ -348,7 +348,10 @@ module dm_csrs #(
                 dm::AbstractAuto: begin
                     // this field can only be written legally when there is no command executing
                     if (!cmdbusy_i) begin
-                        abstractauto_d = {dmi_req_i.data[31:16], 4'b0, dmi_req_i.data[11:0]};
+                        abstractauto_d                 = 32'b0;
+                        abstractauto_d.autoexecdata    = dmi_req_i.data[dm::DataCount-1:0];
+                        abstractauto_d.autoexecprogbuf = dmi_req_i.data[dm::ProgBufSize-1+16:16];
+
                     end else if (cmderr_q == dm::CmdErrNone) begin
                         cmderr_d = dm::CmdErrBusy;
                     end
