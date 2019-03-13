@@ -263,7 +263,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         resp_queue_data = sbaddr_q[31:0];
                     end
                 end
@@ -271,7 +271,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         resp_queue_data = sbaddr_q[63:32];
                     end
                 end
@@ -279,7 +279,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         sbdata_read_valid_o = (sbcs_q.sberror == '0);
                         resp_queue_data = sbdata_q[31:0];
                     end
@@ -288,7 +288,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         resp_queue_data = sbdata_q[63:32];
                     end
                 end
@@ -370,7 +370,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                         sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         automatic dm::sbcs_t sbcs = dm::sbcs_t'(dmi_req_i.data);
                         sbcs_d = sbcs;
                         // R/W1C
@@ -382,7 +382,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         sbaddr_d[31:0] = dmi_req_i.data;
                         sbaddress_write_valid_o = (sbcs_q.sberror == '0);
                     end
@@ -391,7 +391,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         sbaddr_d[63:32] = dmi_req_i.data;
                     end
                 end
@@ -399,7 +399,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         sbdata_d[31:0] = dmi_req_i.data;
                         sbdata_write_valid_o = (sbcs_q.sberror == '0);
                     end
@@ -408,7 +408,7 @@ module dm_csrs #(
                     // access while the SBA was busy
                     if (sbbusy_i) begin
                        sbcs_d.sbbusyerror = 1'b1;
-                    end begin
+                    end else begin
                         sbdata_d[63:32] = dmi_req_i.data;
                     end
                 end
