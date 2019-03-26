@@ -79,10 +79,11 @@ module dm_mem #(
     logic [4:0][63:0]   abstract_cmd;
     logic [NrHarts-1:0] halted_d, halted_q;
     logic [NrHarts-1:0] resuming_d, resuming_q;
-    logic               resume, go, going;
+    logic               resume, go;
+    logic [NrHarts-1:0] halted, going;
 
     logic [HartSelLen-1:0] hart_sel;
-    logic exception, halted;
+    logic exception;
     logic unsupported_command;
 
     logic [63:0] rom_rdata;
@@ -118,7 +119,7 @@ module dm_mem #(
         case (state_q)
             Idle: begin
                 cmdbusy_o = 1'b0;
-                if (cmd_valid_i && halted_q) begin
+                if (cmd_valid_i && halted_q[hartsel_i]) begin
                     // give the go signal
                     state_d = Go;
                 end else if (cmd_valid_i) begin
@@ -128,7 +129,7 @@ module dm_mem #(
                 end
                 // CSRs want to resume, the request is ignored when the hart is
                 // requested to halt or it didn't clear the resuming_q bit before
-                if (resumereq_i && !resuming_q && !haltreq_i && halted_q) begin
+                if (resumereq_i && !resuming_q && !haltreq_i[hartsel_i] && halted_q[hartsel_i]) begin
                     state_d = Resume;
                 end
             end
@@ -138,7 +139,7 @@ module dm_mem #(
                 cmdbusy_o = 1'b1;
                 go        = 1'b1;
                 // the thread is now executing the command, track its state
-                if (going)
+                if (going[hartsel_i])
                     state_d = CmdExecuting;
             end
 
@@ -153,7 +154,7 @@ module dm_mem #(
                 cmdbusy_o = 1'b1;
                 go        = 1'b0;
                 // wait until the hart has halted again
-                if (halted) begin
+                if (halted[hartsel_i]) begin
                     state_d = Idle;
                 end
             end
@@ -186,8 +187,8 @@ module dm_mem #(
         // write data in csr register
         data_valid_o = 1'b0;
         exception    = 1'b0;
-        halted       = 1'b0;
-        going        = 1'b0;
+        halted       = '0;
+        going        = '0;
         // The resume ack signal is lowered when the resume request is deasserted
         if (resumereq_i == 1'b0) begin
             resuming_d[hart_sel] = 1'b0;
@@ -198,11 +199,11 @@ module dm_mem #(
             if (we_i) begin
                 unique case (addr_i[DbgAddressBits-1:0]) inside
                     Halted: begin
-                        halted = 1'b1;
+                        halted[hart_sel] = 1'b1;
                         halted_d[hart_sel] = 1'b1;
                     end
                     Going: begin
-                        going = 1'b1;
+                        going[hart_sel] = 1'b1;
                     end
                     Resuming: begin
                         // clear the halted flag as the hart resumed execution
