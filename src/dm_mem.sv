@@ -146,7 +146,7 @@ module dm_mem #(
             Resume: begin
                 cmdbusy_o = 1'b1;
                 resume = 1'b1;
-                if (resuming_o)
+                if (resuming_o[hartsel_i])
                     state_d = Idle;
             end
 
@@ -190,8 +190,8 @@ module dm_mem #(
         halted       = '0;
         going        = 1'b0;
         // The resume ack signal is lowered when the resume request is deasserted
-        if (resumereq_i[hart_sel] == 1'b0) begin
-            resuming_d[hart_sel] = 1'b0;
+        if (resumereq_i[hartsel_i] == 1'b0) begin
+            resuming_d[hartsel_i] = 1'b0;
         end
         // we've got a new request
         if (req_i) begin
