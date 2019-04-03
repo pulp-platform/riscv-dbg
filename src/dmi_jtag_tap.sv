@@ -253,6 +253,7 @@ module dmi_jtag_tap #(
         case (tap_state_q)
             TestLogicReset: begin
                 tap_state_d = (tms_i) ? TestLogicReset : RunTestIdle;
+                test_logic_reset_o = 1'b1;
             end
             RunTestIdle: begin
                 tap_state_d = (tms_i) ? SelectDrScan : RunTestIdle;
