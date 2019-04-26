@@ -559,15 +559,15 @@ module dm_csrs #(
 
 
     generate
-      for(genvar k=0;k < NrHarts;k++) begin
-          always_ff @(posedge clk_i or negedge rst_ni) begin
-              if (!rst_ni) begin
-                  havereset_q[k]  <= 1'b1;
-              end else begin
-                  havereset_q[k]  <= SelectableHarts[k] ? havereset_d[k]   : 1'b0;
-              end
-          end
-      end
+        for (genvar k = 0; k < NrHarts; k++) begin : gen_havereset
+            always_ff @(posedge clk_i or negedge rst_ni) begin
+                if (!rst_ni) begin
+                    havereset_q[k] <= 1'b1;
+                end else begin
+                    havereset_q[k] <= SelectableHarts[k] ? havereset_d[k] : 1'b0;
+                end
+            end
+        end
     endgenerate
 
 ///////////////////////////////////////////////////////
