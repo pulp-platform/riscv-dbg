@@ -105,7 +105,8 @@ module dm_mem #(
     // reshape progbuf
     assign progbuf = progbuf_i;
 
-    enum logic [1:0] { Idle, Go, Resume, CmdExecuting } state_d, state_q;
+    typedef enum logic [1:0] { Idle, Go, Resume, CmdExecuting } state_e;
+    state_e state_d, state_q;
 
     // hart ctrl queue
     always_comb begin
@@ -437,17 +438,17 @@ module dm_mem #(
     end
 
     generate
-      for(genvar k=0;k < NrHarts; k++) begin
-          always_ff @(posedge clk_i or negedge rst_ni) begin
-              if (!rst_ni) begin
-                  halted_q[k]   <= 1'b0;
-                  resuming_q[k] <= 1'b0;
-              end else begin
-                  halted_q[k]   <= SelectableHarts[k] ? halted_d[k]   : 1'b0;
-                  resuming_q[k] <= SelectableHarts[k] ? resuming_d[k] : 1'b0;
-              end
-          end
-      end
+        for (genvar k = 0; k < NrHarts; k++) begin : gen_halted
+            always_ff @(posedge clk_i or negedge rst_ni) begin
+                if (!rst_ni) begin
+                    halted_q[k]   <= 1'b0;
+                    resuming_q[k] <= 1'b0;
+                end else begin
+                    halted_q[k]   <= SelectableHarts[k] ? halted_d[k]   : 1'b0;
+                    resuming_q[k] <= SelectableHarts[k] ? resuming_d[k] : 1'b0;
+                end
+            end
+        end
     endgenerate
 
 endmodule
