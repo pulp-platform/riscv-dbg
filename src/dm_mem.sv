@@ -249,9 +249,11 @@ module dm_mem #(
                         end
                     end
 
-                    // TODO(zarubaf) change hard-coded values
                     [DataBase:DataEnd]: begin
-                        rdata_d = {data_i[1], data_i[0]};
+                        rdata_d = {
+                                  data_i[(addr_i[DbgAddressBits-1:3] - DataBase[DbgAddressBits-1:3] + 1)],
+                                  data_i[(addr_i[DbgAddressBits-1:3] - DataBase[DbgAddressBits-1:3])]
+                                  };
                     end
 
                     [ProgBufBase:ProgBufEnd]: begin
