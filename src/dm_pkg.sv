@@ -21,7 +21,6 @@ package dm;
     // size of program buffer in junks of 32-bit words
     localparam logic [4:0] ProgBufSize   = 5'h8;
 
-    // TODO(zarubaf) This is hard-coded to two at the moment
     // amount of data count registers implemented
     localparam logic [3:0] DataCount     = 4'h2;
 
