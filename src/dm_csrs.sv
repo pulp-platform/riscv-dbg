@@ -20,10 +20,10 @@ module dm_csrs #(
     parameter int                 BusWidth         = 32,
     parameter logic [NrHarts-1:0] SelectableHarts  = 1
 ) (
-    input  logic                              clk_i,              // Clock
-    input  logic                              rst_ni,             // Asynchronous reset active low
+    input  logic                              clk_i,           // Clock
+    input  logic                              rst_ni,          // Asynchronous reset active low
     input  logic                              testmode_i,
-    input  logic                              dmi_rst_ni,         // Debug Module Interface reset, active-low
+    input  logic                              dmi_rst_ni,      // Debug Module Intf reset active-low
     input  logic                              dmi_req_valid_i,
     output logic                              dmi_req_ready_o,
     input  dm::dmi_req_t                      dmi_req_i,
@@ -32,8 +32,9 @@ module dm_csrs #(
     input  logic                              dmi_resp_ready_i,
     output dm::dmi_resp_t                     dmi_resp_o,
     // global ctrl
-    output logic                              ndmreset_o,      // non-debug module reset, active-high
-    output logic                              dmactive_o,      // 1 -> debug-module is active, 0 -> synchronous re-set
+    output logic                              ndmreset_o,      // non-debug module reset active-high
+    output logic                              dmactive_o,      // 1 -> debug-module is active,
+                                                               // 0 -> synchronous re-set
     // hart status
     input  dm::hartinfo_t [NrHarts-1:0]       hartinfo_i,      // static hartinfo
     input  logic [NrHarts-1:0]                halted_i,        // hart is halted
@@ -45,7 +46,7 @@ module dm_csrs #(
     output logic [NrHarts-1:0]                resumereq_o,     // request hart to resume
     output logic                              clear_resumeack_o,
 
-    output logic                              cmd_valid_o,       // debugger is writing to the command field
+    output logic                              cmd_valid_o,       // debugger writing to cmd field
     output dm::command_t                      cmd_o,             // abstract command
     input  logic                              cmderror_valid_i,  // an error occured
     input  dm::cmderr_e                       cmderror_i,        // this error occured
@@ -159,8 +160,8 @@ module dm_csrs #(
     assign sbreadonaddr_o    = sbcs_q.sbreadonaddr;
     assign sbreadondata_o    = sbcs_q.sbreadondata;
     assign sbaccess_o        = sbcs_q.sbaccess;
-    assign sbdata_o          = sbdata_q;
-    assign sbaddress_o       = sbaddr_q;
+    assign sbdata_o          = sbdata_q[BusWidth-1:0];
+    assign sbaddress_o       = sbaddr_q[BusWidth-1:0];
 
     assign hartsel_o         = {dmcontrol_q.hartselhi, dmcontrol_q.hartsello};
 
@@ -187,8 +188,8 @@ module dm_csrs #(
 
         // as soon as we are out of the legal Hart region tell the debugger
         // that there are only non-existent harts
-        dmstatus.allnonexistent = (hartsel_o > NrHarts[19:0] - 1) ? 1'b1 : 1'b0;
-        dmstatus.anynonexistent = (hartsel_o > NrHarts[19:0] - 1) ? 1'b1 : 1'b0;
+        dmstatus.allnonexistent = (hartsel_o > (NrHarts[19:0] - 1)) ? 1'b1 : 1'b0;
+        dmstatus.anynonexistent = (hartsel_o > (NrHarts[19:0] - 1)) ? 1'b1 : 1'b0;
 
         // We are not allowed to be in multiple states at once. This is a to
         // make the running/halted and unavailable states exclusive.
@@ -236,7 +237,8 @@ module dm_csrs #(
                     end
                     if (!cmdbusy_i) begin
                         // check whether we need to re-execute the command (just give a cmd_valid)
-                        cmd_valid_d = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] - int'(dm::Data0)];
+                        cmd_valid_d = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] -
+                                      int'(dm::Data0)];
                     end
                 end
                 dm::DMControl:    resp_queue_data = dmcontrol_q;
@@ -250,7 +252,7 @@ module dm_csrs #(
                     resp_queue_data = progbuf_q[dmi_req_i.addr[4:0]];
                     if (!cmdbusy_i) begin
                         // check whether we need to re-execute the command (just give a cmd_valid)
-                        // TODO(zarubaf): check if offset is correct - without it this may assign Xes
+                        // TODO(zarubaf): check if offset is correct: without it this may assign Xes
                         cmd_valid_d = abstractauto_q.autoexecprogbuf[dmi_req_i.addr[3:0]+16];
                     end
                 end
@@ -306,7 +308,8 @@ module dm_csrs #(
                     if (!cmdbusy_i && dm::DataCount > 0) begin
                         data_d[dmi_req_i.addr[4:0]] = dmi_req_i.data;
                         // check whether we need to re-execute the command (just give a cmd_valid)
-                        cmd_valid_d = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] - int'(dm::Data0)];
+                        cmd_valid_d = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] -
+                                      int'(dm::Data0)];
                     end
                 end
                 dm::DMControl: begin
@@ -363,8 +366,10 @@ module dm_csrs #(
                     if (!cmdbusy_i) begin
                         progbuf_d[dmi_req_i.addr[4:0]] = dmi_req_i.data;
                         // check whether we need to re-execute the command (just give a cmd_valid)
-                        // this should probably throw an error if executed during another command was busy
-                        // TODO(zarubaf): check if offset is correct - without it this may assign Xes
+                        // this should probably throw an error if executed during another command
+                        // was busy
+                        // TODO(zarubaf): check if offset is correct - without it this may
+                        // assign Xes
                         cmd_valid_d = abstractauto_q.autoexecprogbuf[dmi_req_i.addr[3:0]+16];
                     end
                 end
@@ -489,8 +494,6 @@ module dm_csrs #(
 
     assign resp_queue_pop = dmi_resp_ready_i & ~resp_queue_empty;
 
-    logic ndmreset_n;
-
     assign ndmreset_o = dmcontrol_q.ndmreset;
 
     // response FIFO
@@ -566,17 +569,15 @@ module dm_csrs #(
     end
 
 
-    generate
-        for (genvar k = 0; k < NrHarts; k++) begin : gen_havereset
-            always_ff @(posedge clk_i or negedge rst_ni) begin
-                if (!rst_ni) begin
-                    havereset_q[k] <= 1'b1;
-                end else begin
-                    havereset_q[k] <= SelectableHarts[k] ? havereset_d[k] : 1'b0;
-                end
+    for (genvar k = 0; k < NrHarts; k++) begin : gen_havereset
+        always_ff @(posedge clk_i or negedge rst_ni) begin
+            if (!rst_ni) begin
+                havereset_q[k] <= 1'b1;
+            end else begin
+                havereset_q[k] <= SelectableHarts[k] ? havereset_d[k] : 1'b0;
             end
         end
-    endgenerate
+    end
 
 ///////////////////////////////////////////////////////
 // assertions
@@ -586,9 +587,11 @@ module dm_csrs #(
 //pragma translate_off
 `ifndef VERILATOR
     haltsum: assert property (
-        @(posedge clk_i) disable iff (!rst_ni) (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) |->
-            !({1'b0, dmi_req_i.addr} inside {dm::HaltSum0, dm::HaltSum1, dm::HaltSum2, dm::HaltSum3}))
-                else $warning("Haltsums have not been properly tested yet.");
+        @(posedge clk_i) disable iff (!rst_ni)
+            (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) |->
+                !({1'b0, dmi_req_i.addr} inside
+                    {dm::HaltSum0, dm::HaltSum1, dm::HaltSum2, dm::HaltSum3}))
+        else $warning("Haltsums have not been properly tested yet.");
 `endif
 //pragma translate_on
 
