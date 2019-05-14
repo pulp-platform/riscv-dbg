@@ -96,16 +96,16 @@ module dm_sba #(
                 // generate byte enable mask
                 case (sbaccess_i)
                     3'b000: begin
-                        if (BusWidth == 64) be[ sbaddress_i[2:0]] = '1;
-                        else                be[ sbaddress_i[1:0]] = '1;
+                        if (BusWidth == 32'd64) be[ sbaddress_i[2:0]] = '1;
+                        else                    be[ sbaddress_i[1:0]] = '1;
                     end
                     3'b001: begin
-                        if (BusWidth == 64) be[{sbaddress_i[2:1], 1'b0} +: 2] = '1;
-                        else                be[{sbaddress_i[1:1], 1'b0} +: 2] = '1;
+                        if (BusWidth == 32'd64) be[{sbaddress_i[2:1], 1'b0} +: 2] = '1;
+                        else                    be[{sbaddress_i[1:1], 1'b0} +: 2] = '1;
                     end
                     3'b010: begin
-                        if (BusWidth == 64) be[{sbaddress_i[2:2], 2'b0} +: 4] = '1;
-                        else                be = '1;
+                        if (BusWidth == 32'd64) be[{sbaddress_i[2:2], 2'b0} +: 4] = '1;
+                        else                    be = '1;
                     end
                     3'b011: be = '1;
                     default:;
@@ -117,7 +117,7 @@ module dm_sba #(
                 if (sbdata_valid_o) begin
                     state_d = Idle;
                     // auto-increment address
-                    if (sbautoincrement_i) sbaddress_o = sbaddress_i + (1 << sbaccess_i);
+                    if (sbautoincrement_i) sbaddress_o = sbaddress_i + (1'b1 << sbaccess_i);
                 end
             end
 
@@ -125,16 +125,19 @@ module dm_sba #(
                 if (sbdata_valid_o) begin
                     state_d = Idle;
                     // auto-increment address
-                    if (sbautoincrement_i) sbaddress_o = sbaddress_i + (1 << sbaccess_i);
+                    if (sbautoincrement_i) sbaddress_o = sbaddress_i + (1'b1 << sbaccess_i);
                 end
             end
+
+            default:;
         endcase
+
         // handle error case
         if (sbaccess_i > 3 && state_q != Idle) begin
             req             = 1'b0;
             state_d         = Idle;
             sberror_valid_o = 1'b1;
-            sberror_o       = 'd3;
+            sberror_o       = 3'd3;
         end
         // further error handling should go here ...
     end
@@ -160,7 +163,10 @@ module dm_sba #(
     //pragma translate_off
     `ifndef VERILATOR
         // maybe bump severity to $error if not handled at runtime
-        dm_sba_access_size: assert property(@(posedge  clk_i) disable iff (dmactive_i !== 1'b0) (state_d != Idle) |-> (sbaccess_i < 4)) else $warning ("accesses > 8 byte not supported at the moment");
+        dm_sba_access_size: assert property(@(posedge clk_i) disable iff (dmactive_i !== 1'b0)
+            (state_d != Idle) |-> (sbaccess_i < 4))
+        else
+            $warning ("accesses > 8 byte not supported at the moment");
     `endif
     //pragma translate_on
 
