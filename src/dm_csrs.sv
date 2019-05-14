@@ -16,9 +16,9 @@
  */
 
 module dm_csrs #(
-    parameter int                 NrHarts          = -1,
-    parameter int                 BusWidth         = -1,
-    parameter logic [NrHarts-1:0] SelectableHarts  = -1
+    parameter int                 NrHarts          = 1,
+    parameter int                 BusWidth         = 32,
+    parameter logic [NrHarts-1:0] SelectableHarts  = 1
 ) (
     input  logic                              clk_i,              // Clock
     input  logic                              rst_ni,             // Asynchronous reset active low
