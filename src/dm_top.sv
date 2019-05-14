@@ -18,9 +18,9 @@
  */
 
 module dm_top #(
-    parameter int                 NrHarts          = -1,
-    parameter int                 BusWidth         = -1,
-    parameter logic [NrHarts-1:0] SelectableHarts  = -1 // Bitmask to select physically available harts for systems
+    parameter int                 NrHarts          = 1,
+    parameter int                 BusWidth         = 32,
+    parameter logic [NrHarts-1:0] SelectableHarts  = 1  // Bitmask to select physically available harts for systems
                                                         // that don't use hart numbers in a contiguous fashion.
 
 ) (
