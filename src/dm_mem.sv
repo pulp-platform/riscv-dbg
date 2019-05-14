@@ -29,6 +29,7 @@ module dm_mem #(
     // from Ctrl and Status register
     input  logic [NrHarts-1:0]               haltreq_i,
     input  logic [NrHarts-1:0]               resumereq_i,
+    input  logic                             clear_resumeack_i,
 
     // state bits
     output logic [NrHarts-1:0]               halted_o,    // hart acknowledge halt
@@ -191,7 +192,7 @@ module dm_mem #(
         halted       = '0;
         going        = 1'b0;
         // The resume ack signal is lowered when the resume request is deasserted
-        if (resumereq_i[hartsel_i] == 1'b0) begin
+        if (clear_resumeack_i) begin
             resuming_d[hartsel_i] = 1'b0;
         end
         // we've got a new request
