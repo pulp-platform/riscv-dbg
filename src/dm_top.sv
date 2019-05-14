@@ -66,6 +66,7 @@ module dm_top #(
     logic [NrHarts-1:0]               resumeack;
     logic [NrHarts-1:0]               haltreq;
     logic [NrHarts-1:0]               resumereq;
+    logic                             clear_resumeack;
     logic                             cmd_valid;
     dm::command_t                     cmd;
 
@@ -119,6 +120,7 @@ module dm_top #(
         .resumeack_i             ( resumeack             ),
         .haltreq_o               ( haltreq               ),
         .resumereq_o             ( resumereq             ),
+        .clear_resumeack_o       ( clear_resumeack       ),
         .cmd_valid_o             ( cmd_valid             ),
         .cmd_o                   ( cmd                   ),
         .cmderror_valid_i        ( cmderror_valid        ),
@@ -189,6 +191,7 @@ module dm_top #(
         .hartsel_i               ( hartsel               ),
         .haltreq_i               ( haltreq               ),
         .resumereq_i             ( resumereq             ),
+        .clear_resumeack_i       ( clear_resumeack       ),
         .halted_o                ( halted                ),
         .resuming_o              ( resumeack             ),
         .cmd_valid_i             ( cmd_valid             ),
