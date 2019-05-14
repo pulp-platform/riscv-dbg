@@ -22,6 +22,7 @@ module dm_csrs #(
 ) (
     input  logic                              clk_i,           // Clock
     input  logic                              rst_ni,          // Asynchronous reset active low
+    input  logic                              testmode_i,
     input  logic                              dmi_rst_ni,      // Debug Module Intf reset active-low
     input  logic                              dmi_req_valid_i,
     output logic                              dmi_req_ready_o,
@@ -186,8 +187,8 @@ module dm_csrs #(
 
         // as soon as we are out of the legal Hart region tell the debugger
         // that there are only non-existent harts
-        dmstatus.allnonexistent = (hartsel_o > $unsigned(NrHarts[19:0]) - 1) ? 1'b1 : 1'b0;
-        dmstatus.anynonexistent = (hartsel_o > $unsigned(NrHarts[19:0]) - 1) ? 1'b1 : 1'b0;
+        dmstatus.allnonexistent = (hartsel_o > (NrHarts[19:0] - 1)) ? 1'b1 : 1'b0;
+        dmstatus.anynonexistent = (hartsel_o > (NrHarts[19:0] - 1)) ? 1'b1 : 1'b0;
 
         // We are not allowed to be in multiple states at once. This is a to
         // make the running/halted and unavailable states exclusive.
@@ -460,11 +461,11 @@ module dm_csrs #(
         sbcs_d.sbbusy               = sbbusy_i;
         sbcs_d.sbasize              = BusWidth;
         sbcs_d.sbaccess128          = 1'b0;
-        sbcs_d.sbaccess64           = BusWidth == 32'd64;
-        sbcs_d.sbaccess32           = BusWidth == 32'd32;
+        sbcs_d.sbaccess64           = BusWidth == 64;
+        sbcs_d.sbaccess32           = BusWidth == 32;
         sbcs_d.sbaccess16           = 1'b0;
         sbcs_d.sbaccess8            = 1'b0;
-        sbcs_d.sbaccess             = BusWidth == 32'd64 ? 2'd3 : 2'd2;
+        sbcs_d.sbaccess             = BusWidth == 64 ? 2'd3 : 2'd2;
     end
 
     // output multiplexer
@@ -488,20 +489,22 @@ module dm_csrs #(
     assign ndmreset_o = dmcontrol_q.ndmreset;
 
     // response FIFO
-    prim_fifo_sync #(
-      .Width (32),
-      .Pass  (1'b0),
-      .Depth (2)
+    fifo_v2 #(
+        .dtype            ( logic [31:0]         ),
+        .DEPTH            ( 2                    )
     ) i_fifo (
         .clk_i            ( clk_i                ),
         .rst_ni           ( dmi_rst_ni           ), // reset only when system is re-set
-        .full             ( resp_queue_full      ),
-        .empty            ( resp_queue_empty     ),
-        .wdata            ( resp_queue_data      ),
-        .wen              ( resp_queue_push      ),
-        .rdata            ( dmi_resp_o.data      ),
-        .ren              ( resp_queue_pop       ),
-        .depth            (                      )  // Doesn't use
+        .flush_i          ( 1'b0                 ), // we do not need to flush this queue
+        .testmode_i       ( testmode_i           ),
+        .full_o           ( resp_queue_full      ),
+        .empty_o          ( resp_queue_empty     ),
+        .alm_full_o       (                      ),
+        .alm_empty_o      (                      ),
+        .data_i           ( resp_queue_data      ),
+        .push_i           ( resp_queue_push      ),
+        .data_o           ( dmi_resp_o.data      ),
+        .pop_i            ( resp_queue_pop       )
     );
 
     always_ff @(posedge clk_i or negedge rst_ni) begin

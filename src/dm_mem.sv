@@ -56,8 +56,8 @@ module dm_mem #(
     output logic [BusWidth-1:0]              rdata_o
 );
 
-    localparam int HartSelLen = (NrHarts == 32'd1) ? 1 : $clog2(NrHarts);
-    localparam int MaxAar = (BusWidth == 32'd64) ? 4 : 3;
+    localparam int HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
+    localparam int MaxAar = (BusWidth == 64) ? 4 : 3;
     localparam DbgAddressBits = 12;
     localparam logic [DbgAddressBits-1:0] DataBase = (dm::DataAddr);
     localparam logic [DbgAddressBits-1:0] DataEnd = (dm::DataAddr + 4*dm::DataCount);
@@ -182,7 +182,7 @@ module dm_mem #(
 
         halted_d     = halted_q;
         resuming_d   = resuming_q;
-        rdata_o      = (BusWidth == 32'd64) ?
+        rdata_o      = (BusWidth == 64) ?
                           (fwd_rom_q ? rom_rdata : rdata_q) :
                           (word_enable32_q ?
                               (fwd_rom_q ? rom_rdata[63:32] : rdata_q[63:32]) :
@@ -452,7 +452,7 @@ module dm_mem #(
         end
     end
 
-    for (genvar k=0;k < NrHarts; k++) begin : gen_halted
+    for (genvar k = 0; k < NrHarts; k++) begin : gen_halted
         always_ff @(posedge clk_i or negedge rst_ni) begin
             if (!rst_ni) begin
                 halted_q[k]   <= 1'b0;
