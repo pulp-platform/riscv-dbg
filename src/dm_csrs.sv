@@ -43,6 +43,7 @@ module dm_csrs #(
     output logic [19:0]                       hartsel_o,       // hartselect to ctrl module
     output logic [NrHarts-1:0]                haltreq_o,       // request to halt a hart
     output logic [NrHarts-1:0]                resumereq_o,     // request hart to resume
+    output logic                              clear_resumeack_o,
 
     output logic                              cmd_valid_o,       // debugger is writing to the command field
     output dm::command_t                      cmd_o,             // abstract command
@@ -224,6 +225,7 @@ module dm_csrs #(
         sbaddress_write_valid_o = 1'b0;
         sbdata_read_valid_o     = 1'b0;
         sbdata_write_valid_o    = 1'b0;
+        clear_resumeack_o       = 1'b0;
 
         // reads
         if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) begin
@@ -451,6 +453,12 @@ module dm_csrs #(
         dmcontrol_d.zero0           = '0;
         // Non-writeable, clear only
         dmcontrol_d.ackhavereset    = 1'b0;
+        if (!dmcontrol_q.resumereq && dmcontrol_d.resumereq) begin
+            clear_resumeack_o = 1'b1;
+        end
+        if (dmcontrol_q.resumereq && resumeack_i) begin
+            dmcontrol_d.resumereq = 1'b0;
+        end
         // static values for dcsr
         sbcs_d.sbversion            = 3'b1;
         sbcs_d.sbbusy               = sbbusy_i;
