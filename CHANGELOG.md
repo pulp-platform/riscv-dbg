@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.1.0] - 2019-05-16
+## [0.1.0] - 2019-05-18
 
 ### Added
 - Parametrize buswidth to support 32-bit and 64-bit cores
@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Remove ariane specific packages
 
 ### Fixed
+- Fix resumeack and resumereq behaviour to be cleared and set according to debug
+  specification
 - Add missing JTAG test logic reset handling
 - Fix resume logic in multihart situations
 - Fix missing else(s) in system bus access
