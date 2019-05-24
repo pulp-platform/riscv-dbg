@@ -17,7 +17,13 @@
  */
 
 module dmi_jtag_tap #(
-    parameter int IrLength = 5
+    parameter int IrLength = 5,
+    // JTAG IDCODE Value
+    parameter logic [31:0] IdcodeValue = 32'h00000001
+    // xxxx             version
+    // xxxxxxxxxxxxxxxx part number
+    // xxxxxxxxxxx      manufacturer id
+    // 1                required by standard
 )(
     input  logic        tck_i,    // JTAG test clock pad
     input  logic        tms_i,    // JTAG test mode select pad
@@ -48,10 +54,11 @@ module dmi_jtag_tap #(
     // to submodule
     assign dmi_tdi_o = td_i;
 
-    enum logic [3:0] { TestLogicReset, RunTestIdle, SelectDrScan,
+    typedef enum logic [3:0] { TestLogicReset, RunTestIdle, SelectDrScan,
                      CaptureDr, ShiftDr, Exit1Dr, PauseDr, Exit2Dr,
                      UpdateDr, SelectIrScan, CaptureIr, ShiftIr,
-                     Exit1Ir, PauseIr, Exit2Ir, UpdateIr } tap_state_q, tap_state_d;
+                     Exit1Ir, PauseIr, Exit2Ir, UpdateIr } tap_state_e;
+    tap_state_e tap_state_q, tap_state_d;
 
     typedef enum logic [IrLength-1:0] {
         BYPASS0   = 'h0,
@@ -59,7 +66,7 @@ module dmi_jtag_tap #(
         DTMCSR    = 'h10,
         DMIACCESS = 'h11,
         BYPASS1   = 'h1f
-    } ir_reg_t;
+    } ir_reg_e;
 
     typedef struct packed {
         logic [31:18] zero1;
@@ -76,7 +83,7 @@ module dmi_jtag_tap #(
     // IR logic
     // ----------------
     logic [IrLength-1:0]  jtag_ir_shift_d, jtag_ir_shift_q; // shift register
-    ir_reg_t              jtag_ir_d, jtag_ir_q; // IR register -> this gets captured from shift register upon update_ir
+    ir_reg_e              jtag_ir_d, jtag_ir_q; // IR register -> this gets captured from shift register upon update_ir
     logic capture_ir, shift_ir, pause_ir, update_ir;
 
     always_comb begin
@@ -95,7 +102,7 @@ module dmi_jtag_tap #(
 
         // update IR register
         if (update_ir) begin
-            jtag_ir_d = ir_reg_t'(jtag_ir_shift_q);
+            jtag_ir_d = ir_reg_e'(jtag_ir_shift_q);
         end
 
         // synchronous test-logic reset
@@ -106,7 +113,7 @@ module dmi_jtag_tap #(
     end
 
     always_ff @(posedge tck_i, negedge trst_ni) begin
-        if (~trst_ni) begin
+        if (!trst_ni) begin
             jtag_ir_shift_q <= '0;
             jtag_ir_q       <= IDCODE;
         end else begin
@@ -121,12 +128,6 @@ module dmi_jtag_tap #(
     // - Bypass
     // - IDCODE
     // - DTM CS
-    // Define IDCODE Value
-    localparam IDCODE_VALUE = 32'h249511C3;
-    // 0001             version
-    // 0100100101010001 part number (IQ)
-    // 00011100001      manufacturer id (flextronics)
-    // 1                required by standard
     logic [31:0] idcode_d, idcode_q;
     logic        idcode_select;
     logic        bypass_select;
@@ -141,7 +142,7 @@ module dmi_jtag_tap #(
         dtmcs_d  = dtmcs_q;
 
         if (capture_dr_o) begin
-            if (idcode_select) idcode_d = IDCODE_VALUE;
+            if (idcode_select) idcode_d = IdcodeValue;
             if (bypass_select) bypass_d = 1'b0;
             if (dtmcs_select_o) begin
                 dtmcs_d  = '{
@@ -164,7 +165,7 @@ module dmi_jtag_tap #(
         end
 
         if (test_logic_reset_o) begin
-            idcode_d = IDCODE_VALUE;
+            idcode_d = IdcodeValue;
             bypass_d = 1'b0;
         end
     end
@@ -225,7 +226,7 @@ module dmi_jtag_tap #(
 
     // TDO changes state at negative edge of TCK
     always_ff @(posedge tck_n, negedge trst_ni) begin
-        if (~trst_ni) begin
+        if (!trst_ni) begin
             td_o     <= 1'b0;
             tdo_oe_o <= 1'b0;
         end else begin
@@ -252,6 +253,7 @@ module dmi_jtag_tap #(
         case (tap_state_q)
             TestLogicReset: begin
                 tap_state_d = (tms_i) ? TestLogicReset : RunTestIdle;
+                test_logic_reset_o = 1'b1;
             end
             RunTestIdle: begin
                 tap_state_d = (tms_i) ? SelectDrScan : RunTestIdle;
@@ -324,9 +326,9 @@ module dmi_jtag_tap #(
     end
 
     always_ff @(posedge tck_i or negedge trst_ni) begin
-        if (~trst_ni) begin
+        if (!trst_ni) begin
             tap_state_q <= RunTestIdle;
-            idcode_q    <= IDCODE_VALUE;
+            idcode_q    <= IdcodeValue;
             bypass_q    <= 1'b0;
             dtmcs_q     <= '0;
         end else begin

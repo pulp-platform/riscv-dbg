@@ -21,7 +21,6 @@ package dm;
     // size of program buffer in junks of 32-bit words
     localparam logic [4:0] ProgBufSize   = 5'h8;
 
-    // TODO(zarubaf) This is hard-coded to two at the moment
     // amount of data count registers implemented
     localparam logic [3:0] DataCount     = 4'h2;
 
@@ -77,7 +76,7 @@ package dm;
         SBData2      = 8'h3E,
         SBData3      = 8'h3F,
         HaltSum0     = 8'h40
-    } dm_csr_t;
+    } dm_csr_e;
 
     // debug causes
     localparam logic [2:0] CauseBreakpoint = 3'h1;
@@ -136,7 +135,7 @@ package dm;
     typedef enum logic [2:0] {  CmdErrNone, CmdErrBusy, CmdErrNotSupported,
                                 CmdErrorException, CmdErrorHaltResume,
                                 CmdErrorBus, CmdErrorOther = 7
-                             } cmderr_t;
+                             } cmderr_e;
 
     typedef struct packed {
         logic [31:29] zero3;
@@ -144,7 +143,7 @@ package dm;
         logic [23:13] zero2;
         logic         busy;
         logic         zero1;
-        cmderr_t      cmderr;
+        cmderr_e      cmderr;
         logic [7:4]   zero0;
         logic [3:0]   datacount;
     } abstractcs_t;
@@ -153,10 +152,10 @@ package dm;
                                  AccessRegister = 8'h0,
                                  QuickAccess    = 8'h1,
                                  AccessMemory   = 8'h2
-                             } cmd_t;
+                             } cmd_e;
 
     typedef struct packed {
-        cmd_t        cmdtype;
+        cmd_e        cmdtype;
         logic [23:0] control;
     } command_t;
 
@@ -169,7 +168,7 @@ package dm;
     typedef struct packed {
         logic         zero1;
         logic [22:20] aarsize;
-        logic         zero0;
+        logic         aarpostincrement;
         logic         postexec;
         logic         transfer;
         logic         write;
@@ -181,7 +180,7 @@ package dm;
         DTM_NOP   = 2'h0,
         DTM_READ  = 2'h1,
         DTM_WRITE = 2'h2
-    } dtm_op_t;
+    } dtm_op_e;
 
     typedef struct packed {
         logic [31:29] sbversion;
@@ -205,7 +204,7 @@ package dm;
 
     typedef struct packed {
         logic [6:0]  addr;
-        dtm_op_t     op;
+        dtm_op_e     op;
         logic [31:0] data;
     } dmi_req_t;
 
@@ -213,5 +212,175 @@ package dm;
         logic [31:0] data;
         logic [1:0]  resp;
     } dmi_resp_t;
+
+    // privilege levels
+    typedef enum logic[1:0] {
+      PRIV_LVL_M = 2'b11,
+      PRIV_LVL_S = 2'b01,
+      PRIV_LVL_U = 2'b00
+    } priv_lvl_t;
+
+    // debugregs in core
+    typedef struct packed {
+        logic [31:28]     xdebugver;
+        logic [27:16]     zero2;
+        logic             ebreakm;
+        logic             zero1;
+        logic             ebreaks;
+        logic             ebreaku;
+        logic             stepie;
+        logic             stopcount;
+        logic             stoptime;
+        logic [8:6]       cause;
+        logic             zero0;
+        logic             mprven;
+        logic             nmip;
+        logic             step;
+        priv_lvl_t        prv;
+    } dcsr_t;
+
+    // CSRs
+    typedef enum logic [11:0] {
+        // Floating-Point CSRs
+        CSR_FFLAGS         = 12'h001,
+        CSR_FRM            = 12'h002,
+        CSR_FCSR           = 12'h003,
+        CSR_FTRAN          = 12'h800,
+        // Supervisor Mode CSRs
+        CSR_SSTATUS        = 12'h100,
+        CSR_SIE            = 12'h104,
+        CSR_STVEC          = 12'h105,
+        CSR_SCOUNTEREN     = 12'h106,
+        CSR_SSCRATCH       = 12'h140,
+        CSR_SEPC           = 12'h141,
+        CSR_SCAUSE         = 12'h142,
+        CSR_STVAL          = 12'h143,
+        CSR_SIP            = 12'h144,
+        CSR_SATP           = 12'h180,
+        // Machine Mode CSRs
+        CSR_MSTATUS        = 12'h300,
+        CSR_MISA           = 12'h301,
+        CSR_MEDELEG        = 12'h302,
+        CSR_MIDELEG        = 12'h303,
+        CSR_MIE            = 12'h304,
+        CSR_MTVEC          = 12'h305,
+        CSR_MCOUNTEREN     = 12'h306,
+        CSR_MSCRATCH       = 12'h340,
+        CSR_MEPC           = 12'h341,
+        CSR_MCAUSE         = 12'h342,
+        CSR_MTVAL          = 12'h343,
+        CSR_MIP            = 12'h344,
+        CSR_PMPCFG0        = 12'h3A0,
+        CSR_PMPADDR0       = 12'h3B0,
+        CSR_MVENDORID      = 12'hF11,
+        CSR_MARCHID        = 12'hF12,
+        CSR_MIMPID         = 12'hF13,
+        CSR_MHARTID        = 12'hF14,
+        CSR_MCYCLE         = 12'hB00,
+        CSR_MINSTRET       = 12'hB02,
+        CSR_DCACHE         = 12'h701,
+        CSR_ICACHE         = 12'h700,
+
+        CSR_TSELECT        = 12'h7A0,
+        CSR_TDATA1         = 12'h7A1,
+        CSR_TDATA2         = 12'h7A2,
+        CSR_TDATA3         = 12'h7A3,
+        CSR_TINFO          = 12'h7A4,
+
+        // Debug CSR
+        CSR_DCSR           = 12'h7b0,
+        CSR_DPC            = 12'h7b1,
+        CSR_DSCRATCH0      = 12'h7b2, // optional
+        CSR_DSCRATCH1      = 12'h7b3, // optional
+
+        // Counters and Timers
+        CSR_CYCLE          = 12'hC00,
+        CSR_TIME           = 12'hC01,
+        CSR_INSTRET        = 12'hC02
+    } csr_reg_t;
+
+
+    // Instruction Generation Helpers
+    function automatic logic [31:0] jal (logic[4:0] rd, logic [20:0] imm);
+        // OpCode Jal
+        return {imm[20], imm[10:1], imm[11], imm[19:12], rd, 7'h6f};
+    endfunction
+
+    function automatic logic [31:0] jalr (logic[4:0] rd, logic[4:0] rs1, logic [11:0] offset);
+        // OpCode Jal
+        return {offset[11:0], rs1, 3'b0, rd, 7'h67};
+    endfunction
+
+    function automatic logic [31:0] andi (logic[4:0] rd, logic[4:0] rs1, logic [11:0] imm);
+        // OpCode andi
+        return {imm[11:0], rs1, 3'h7, rd, 7'h13};
+    endfunction
+
+    function automatic logic [31:0] slli (logic[4:0] rd, logic[4:0] rs1, logic [5:0] shamt);
+        // OpCode slli
+        return {6'b0, shamt[5:0], rs1, 3'h1, rd, 7'h13};
+    endfunction
+
+    function automatic logic [31:0] srli (logic[4:0] rd, logic[4:0] rs1, logic [5:0] shamt);
+        // OpCode srli
+        return {6'b0, shamt[5:0], rs1, 3'h5, rd, 7'h13};
+    endfunction
+
+    function automatic logic [31:0] load (logic [2:0] size, logic[4:0] dest, logic[4:0] base, logic [11:0] offset);
+        // OpCode Load
+        return {offset[11:0], base, size, dest, 7'h03};
+    endfunction
+
+    function automatic logic [31:0] auipc (logic[4:0] rd, logic [20:0] imm);
+        // OpCode Auipc
+        return {imm[20], imm[10:1], imm[11], imm[19:12], rd, 7'h17};
+    endfunction
+
+    function automatic logic [31:0] store (logic [2:0] size, logic[4:0] src, logic[4:0] base, logic [11:0] offset);
+        // OpCode Store
+        return {offset[11:5], src, base, size, offset[4:0], 7'h23};
+    endfunction
+
+    function automatic logic [31:0] float_load (logic [2:0] size, logic[4:0] dest, logic[4:0] base, logic [11:0] offset);
+        // OpCode Load
+        return {offset[11:0], base, size, dest, 7'b00_001_11};
+    endfunction
+
+    function automatic logic [31:0] float_store (logic [2:0] size, logic[4:0] src, logic[4:0] base, logic [11:0] offset);
+        // OpCode Store
+        return {offset[11:5], src, base, size, offset[4:0], 7'b01_001_11};
+    endfunction
+
+    function automatic logic [31:0] csrw (csr_reg_t csr, logic[4:0] rs1);
+        // CSRRW, rd, OpCode System
+        return {csr, rs1, 3'h1, 5'h0, 7'h73};
+    endfunction
+
+    function automatic logic [31:0] csrr (csr_reg_t csr, logic [4:0] dest);
+        // rs1, CSRRS, rd, OpCode System
+        return {csr, 5'h0, 3'h2, dest, 7'h73};
+    endfunction
+
+    function automatic logic [31:0] branch(logic [4:0] src2, logic [4:0] src1, logic [2:0] funct3, logic [11:0] offset);
+        // OpCode Branch
+        return {offset[11], offset[9:4], src2, src1, funct3, offset[3:0], offset[10], 7'b11_000_11};
+    endfunction
+
+    function automatic logic [31:0] ebreak ();
+        return 32'h00100073;
+    endfunction
+
+    function automatic logic [31:0] wfi ();
+        return 32'h10500073;
+    endfunction
+
+    function automatic logic [31:0] nop ();
+        return 32'h00000013;
+    endfunction
+
+    function automatic logic [31:0] illegal ();
+        return 32'h00000000;
+    endfunction
+
 
 endpackage

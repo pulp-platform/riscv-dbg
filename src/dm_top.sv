@@ -18,58 +18,60 @@
  */
 
 module dm_top #(
-    parameter int NrHarts      = -1,
-    parameter int AxiIdWidth   = -1,
-    parameter int AxiAddrWidth = -1,
-    parameter int AxiDataWidth = -1,
-    parameter int AxiUserWidth = -1
+    parameter int                 NrHarts          = 1,
+    parameter int                 BusWidth         = 32,
+    parameter logic [NrHarts-1:0] SelectableHarts  = 1  // Bitmask to select physically available harts for systems
+                                                        // that don't use hart numbers in a contiguous fashion.
+
 ) (
-    input  logic               clk_i,       // clock
-    input  logic               rst_ni,      // asynchronous reset active low, connect PoR here, not the system reset
-    input  logic               testmode_i,
-    output logic               ndmreset_o,  // non-debug module reset
-    output logic               dmactive_o,  // debug module is active
-    output logic [NrHarts-1:0] debug_req_o, // async debug request
-    input  logic [NrHarts-1:0] unavailable_i, // communicate whether the hart is unavailable (e.g.: power down)
+    input  logic                  clk_i,       // clock
+    input  logic                  rst_ni,      // asynchronous reset active low, connect PoR here, not the system reset
+    input  logic                  testmode_i,
+    output logic                  ndmreset_o,  // non-debug module reset
+    output logic                  dmactive_o,  // debug module is active
+    output logic [NrHarts-1:0]    debug_req_o, // async debug request
+    input  logic [NrHarts-1:0]    unavailable_i, // communicate whether the hart is unavailable (e.g.: power down)
+    dm::hartinfo_t [NrHarts-1:0]  hartinfo_i,
 
-    // bus slave, for an execution based technique
-    input  ariane_axi::req_t   axi_s_req_i,
-    output ariane_axi::resp_t  axi_s_resp_o,
+    input  logic                  slave_req_i,
+    input  logic                  slave_we_i,
+    input  logic [BusWidth-1:0]   slave_addr_i,
+    input  logic [BusWidth/8-1:0] slave_be_i,
+    input  logic [BusWidth-1:0]   slave_wdata_i,
+    output logic [BusWidth-1:0]   slave_rdata_o,
 
-    // bus master, for system bus accesses
-    output ariane_axi::req_t   axi_m_req_o,
-    input  ariane_axi::resp_t  axi_m_resp_i,
+    output logic                  master_req_o,
+    output logic [BusWidth-1:0]   master_add_o,
+    output logic                  master_we_o,
+    output logic [BusWidth-1:0]   master_wdata_o,
+    output logic [BusWidth/8-1:0] master_be_o,
+    input  logic                  master_gnt_i,
+    input  logic                  master_r_valid_i,
+    input  logic [BusWidth-1:0]   master_r_rdata_i,
 
     // Connection to DTM - compatible to RocketChip Debug Module
-    input  logic               dmi_rst_ni,
-    input  logic               dmi_req_valid_i,
-    output logic               dmi_req_ready_o,
-    input  dm::dmi_req_t       dmi_req_i,
+    input  logic                  dmi_rst_ni,
+    input  logic                  dmi_req_valid_i,
+    output logic                  dmi_req_ready_o,
+    input  dm::dmi_req_t          dmi_req_i,
 
-    output logic               dmi_resp_valid_o,
-    input  logic               dmi_resp_ready_i,
-    output dm::dmi_resp_t      dmi_resp_o
+    output logic                  dmi_resp_valid_o,
+    input  logic                  dmi_resp_ready_i,
+    output dm::dmi_resp_t         dmi_resp_o
 );
 
     // Debug CSRs
-    dm::hartinfo_t [NrHarts-1:0]      hartinfo;
     logic [NrHarts-1:0]               halted;
     // logic [NrHarts-1:0]               running;
     logic [NrHarts-1:0]               resumeack;
     logic [NrHarts-1:0]               haltreq;
     logic [NrHarts-1:0]               resumereq;
+    logic                             clear_resumeack;
     logic                             cmd_valid;
     dm::command_t                     cmd;
 
-    logic                             req;
-    logic                             we;
-    logic [63:0]                      addr;
-    logic [7:0]                       be;
-    logic [63:0]                      wdata;
-    logic [63:0]                      rdata;
-
     logic                             cmderror_valid;
-    dm::cmderr_t                      cmderror;
+    dm::cmderr_e                      cmderror;
     logic                             cmdbusy;
     logic [dm::ProgBufSize-1:0][31:0] progbuf;
     logic [dm::DataCount-1:0][31:0]   data_csrs_mem;
@@ -77,30 +79,27 @@ module dm_top #(
     logic                             data_valid;
     logic [19:0]                      hartsel;
     // System Bus Access Module
-    logic [63:0]                      sbaddress_csrs_sba;
-    logic [63:0]                      sbaddress_sba_csrs;
+    logic [BusWidth-1:0]              sbaddress_csrs_sba;
+    logic [BusWidth-1:0]              sbaddress_sba_csrs;
     logic                             sbaddress_write_valid;
     logic                             sbreadonaddr;
     logic                             sbautoincrement;
     logic [2:0]                       sbaccess;
     logic                             sbreadondata;
-    logic [63:0]                      sbdata_write;
+    logic [BusWidth-1:0]              sbdata_write;
     logic                             sbdata_read_valid;
     logic                             sbdata_write_valid;
-    logic [63:0]                      sbdata_read;
+    logic [BusWidth-1:0]              sbdata_read;
     logic                             sbdata_valid;
     logic                             sbbusy;
     logic                             sberror_valid;
     logic [2:0]                       sberror;
 
-    // Debug Ctrl for each hart -> I haven't found a better way to
-    // parameterize this
-    for (genvar i = 0; i < NrHarts; i++) begin : dm_hart_ctrl
-        assign hartinfo[i] = ariane_pkg::DebugHartInfo;
-    end
 
     dm_csrs #(
-        .NrHarts(NrHarts)
+        .NrHarts(NrHarts),
+        .BusWidth(BusWidth),
+        .SelectableHarts(SelectableHarts)
     ) i_dm_csrs (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
@@ -115,12 +114,13 @@ module dm_top #(
         .ndmreset_o              ( ndmreset_o            ),
         .dmactive_o              ( dmactive_o            ),
         .hartsel_o               ( hartsel               ),
-        .hartinfo_i              ( hartinfo              ),
+        .hartinfo_i              ( hartinfo_i            ),
         .halted_i                ( halted                ),
         .unavailable_i,
         .resumeack_i             ( resumeack             ),
         .haltreq_o               ( haltreq               ),
         .resumereq_o             ( resumereq             ),
+        .clear_resumeack_o       ( clear_resumeack       ),
         .cmd_valid_o             ( cmd_valid             ),
         .cmd_o                   ( cmd                   ),
         .cmderror_valid_i        ( cmderror_valid        ),
@@ -147,12 +147,22 @@ module dm_top #(
         .sberror_i               ( sberror               )
     );
 
-    dm_sba i_dm_sba (
+    dm_sba #(
+        .BusWidth(BusWidth)
+    ) i_dm_sba (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
         .dmactive_i              ( dmactive_o            ),
-        .axi_req_o               ( axi_m_req_o           ),
-        .axi_resp_i              ( axi_m_resp_i          ),
+
+        .master_req_o            ( master_req_o          ),
+        .master_add_o            ( master_add_o          ),
+        .master_we_o             ( master_we_o           ),
+        .master_wdata_o          ( master_wdata_o        ),
+        .master_be_o             ( master_be_o           ),
+        .master_gnt_i            ( master_gnt_i          ),
+        .master_r_valid_i        ( master_r_valid_i      ),
+        .master_r_rdata_i        ( master_r_rdata_i      ),
+
         .sbaddress_i             ( sbaddress_csrs_sba    ),
         .sbaddress_o             ( sbaddress_sba_csrs    ),
         .sbaddress_write_valid_i ( sbaddress_write_valid ),
@@ -171,7 +181,9 @@ module dm_top #(
     );
 
     dm_mem #(
-        .NrHarts (NrHarts)
+        .NrHarts(NrHarts),
+        .BusWidth(BusWidth),
+        .SelectableHarts(SelectableHarts)
     ) i_dm_mem (
         .clk_i                   ( clk_i                 ),
         .rst_ni                  ( rst_ni                ),
@@ -179,6 +191,7 @@ module dm_top #(
         .hartsel_i               ( hartsel               ),
         .haltreq_i               ( haltreq               ),
         .resumereq_i             ( resumereq             ),
+        .clear_resumeack_i       ( clear_resumeack       ),
         .halted_o                ( halted                ),
         .resuming_o              ( resumeack             ),
         .cmd_valid_i             ( cmd_valid             ),
@@ -190,41 +203,20 @@ module dm_top #(
         .data_i                  ( data_csrs_mem         ),
         .data_o                  ( data_mem_csrs         ),
         .data_valid_o            ( data_valid            ),
-        .req_i                   ( req                   ),
-        .we_i                    ( we                    ),
-        .addr_i                  ( addr                  ),
-        .wdata_i                 ( wdata                 ),
-        .be_i                    ( be                    ),
-        .rdata_o                 ( rdata                 )
+        .req_i                   ( slave_req_i           ),
+        .we_i                    ( slave_we_i            ),
+        .addr_i                  ( slave_addr_i          ),
+        .wdata_i                 ( slave_wdata_i         ),
+        .be_i                    ( slave_be_i            ),
+        .rdata_o                 ( slave_rdata_o         )
     );
 
-    AXI_BUS #(
-        .AXI_ID_WIDTH   ( AxiIdWidth   ),
-        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-        .AXI_DATA_WIDTH ( AxiDataWidth ),
-        .AXI_USER_WIDTH ( AxiUserWidth )
-    ) slave();
 
-    axi_slave_connect_rev i_axi_slave_connect_rev (
-      .axi_req_i (axi_s_req_i),
-      .axi_resp_o(axi_s_resp_o),
-      .slave(slave));
-
-    axi2mem #(
-        .AXI_ID_WIDTH   ( AxiIdWidth   ),
-        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-        .AXI_DATA_WIDTH ( AxiDataWidth ),
-        .AXI_USER_WIDTH ( AxiUserWidth )
-    ) i_axi2mem (
-        .clk_i      ( clk_i    ),
-        .rst_ni     ( rst_ni   ),
-        .slave      ( slave    ),
-        .req_o      ( req      ),
-        .we_o       ( we       ),
-        .addr_o     ( addr     ),
-        .be_o       ( be       ),
-        .data_o     ( wdata    ),
-        .data_i     ( rdata    )
-    );
+`ifndef VERILATOR
+    initial begin
+        assert (BusWidth == 32 || BusWidth == 64)
+            else $fatal(1, "DM needs a bus width of either 32 or 64 bits");
+    end
+`endif
 
 endmodule
