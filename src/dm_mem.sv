@@ -428,7 +428,7 @@ module dm_mem #(
     end
 
     logic [63:0] rom_addr;
-    assign rom_addr = addr_i;
+    assign rom_addr = 64'(addr_i);
     debug_rom i_debug_rom (
         .clk_i,
         .req_i,
