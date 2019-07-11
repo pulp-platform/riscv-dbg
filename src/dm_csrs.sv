@@ -218,7 +218,7 @@ module dm_csrs #(
         progbuf_d   = progbuf_q;
         data_d      = data_q;
         sbcs_d      = sbcs_q;
-        sbaddr_d    = 64'(sbaddress_i);
+        sbaddr_d    = sbaddress_i;
         sbdata_d    = sbdata_q;
 
         resp_queue_data         = 32'b0;
