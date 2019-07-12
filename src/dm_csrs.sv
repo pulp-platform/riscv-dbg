@@ -93,7 +93,8 @@ module dm_csrs #(
     localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'((dm::ProgBuf0 + {4'b0, dm::ProgBufSize}));
 
     logic [31:0] haltsum0, haltsum1, haltsum2, haltsum3;
-    logic [NrHarts/2**5 :0][31:0] halted_reshaped0;
+    logic [((NrHarts-1)/2**5 + 1) * 32 - 1 : 0] halted;
+    logic [(NrHarts-1)/2**5:0][31:0] halted_reshaped0;
     logic [NrHarts/2**10:0][31:0] halted_reshaped1;
     logic [NrHarts/2**15:0][31:0] halted_reshaped2;
     logic [(NrHarts/2**10+1)*32-1:0] halted_flat1;
@@ -101,8 +102,13 @@ module dm_csrs #(
     logic [32-1:0] halted_flat3;
 
     // haltsum0
-    assign halted_reshaped0 = halted_i;
-    assign haltsum0         = halted_reshaped0[hartsel_o[19:5]];
+    always_comb begin
+        halted              = '0;
+        halted[NrHarts-1:0] = halted_i;
+        halted_reshaped0    = halted;
+        haltsum0            = halted_reshaped0[hartsel_o[19:5]];
+    end
+    
     // haltsum1
     always_comb begin : p_reduction1
         halted_flat1 = '0;
