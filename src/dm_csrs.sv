@@ -93,7 +93,8 @@ module dm_csrs #(
     localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'((dm::ProgBuf0 + {4'b0, dm::ProgBufSize}));
 
     logic [31:0] haltsum0, haltsum1, haltsum2, haltsum3;
-    logic [NrHarts/2**5 :0][31:0] halted_reshaped0;
+    logic [((NrHarts-1)/2**5 + 1) * 32 - 1 : 0] halted;
+    logic [(NrHarts-1)/2**5:0][31:0] halted_reshaped0;
     logic [NrHarts/2**10:0][31:0] halted_reshaped1;
     logic [NrHarts/2**15:0][31:0] halted_reshaped2;
     logic [(NrHarts/2**10+1)*32-1:0] halted_flat1;
@@ -101,8 +102,13 @@ module dm_csrs #(
     logic [32-1:0] halted_flat3;
 
     // haltsum0
-    assign halted_reshaped0 = halted_i;
-    assign haltsum0         = halted_reshaped0[hartsel_o[19:5]];
+    always_comb begin
+        halted              = '0;
+        halted[NrHarts-1:0] = halted_i;
+        halted_reshaped0    = halted;
+        haltsum0            = halted_reshaped0[hartsel_o[19:5]];
+    end
+    
     // haltsum1
     always_comb begin : p_reduction1
         halted_flat1 = '0;
@@ -188,8 +194,8 @@ module dm_csrs #(
 
         // as soon as we are out of the legal Hart region tell the debugger
         // that there are only non-existent harts
-        dmstatus.allnonexistent = (hartsel_o > (NrHarts[19:0] - 1)) ? 1'b1 : 1'b0;
-        dmstatus.anynonexistent = (hartsel_o > (NrHarts[19:0] - 1)) ? 1'b1 : 1'b0;
+        dmstatus.allnonexistent = (hartsel_o > (NrHarts - 1)) ? 1'b1 : 1'b0;
+        dmstatus.anynonexistent = (hartsel_o > (NrHarts - 1)) ? 1'b1 : 1'b0;
 
         // We are not allowed to be in multiple states at once. This is a to
         // make the running/halted and unavailable states exclusive.
@@ -354,8 +360,8 @@ module dm_csrs #(
                     // this field can only be written legally when there is no command executing
                     if (!cmdbusy_i) begin
                         abstractauto_d                 = 32'b0;
-                        abstractauto_d.autoexecdata    = dmi_req_i.data[dm::DataCount-1:0];
-                        abstractauto_d.autoexecprogbuf = dmi_req_i.data[dm::ProgBufSize-1+16:16];
+                        abstractauto_d.autoexecdata    = 12'(dmi_req_i.data[dm::DataCount-1:0]);
+                        abstractauto_d.autoexecprogbuf = 16'(dmi_req_i.data[dm::ProgBufSize-1+16:16]);
 
                     end else if (cmderr_q == dm::CmdErrNone) begin
                         cmderr_d = dm::CmdErrBusy;
@@ -378,7 +384,8 @@ module dm_csrs #(
                     if (sbbusy_i) begin
                         sbcs_d.sbbusyerror = 1'b1;
                     end else begin
-                        automatic dm::sbcs_t sbcs = dm::sbcs_t'(dmi_req_i.data);
+                        automatic dm::sbcs_t sbcs;
+                        sbcs = dm::sbcs_t'(dmi_req_i.data);
                         sbcs_d = sbcs;
                         // R/W1C
                         sbcs_d.sbbusyerror = sbcs_q.sbbusyerror & (~sbcs.sbbusyerror);
@@ -444,7 +451,7 @@ module dm_csrs #(
         end
         // update read data
         if (sbdata_valid_i) begin
-            sbdata_d = sbdata_i;
+            sbdata_d = 64'(sbdata_i);
         end
 
         // dmcontrol

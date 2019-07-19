@@ -137,7 +137,7 @@ module dmi_jtag #(
                 end
             end
 
-            WaitWriteValid: begin
+            default: begin
                 // just wait for idle here
                 if (dmi_resp_valid) begin
                     state_d = Idle;
