@@ -76,6 +76,10 @@ module dm_mem #(
     localparam logic [DbgAddressBits-1:0] Resuming  = 'h108;
     localparam logic [DbgAddressBits-1:0] Exception = 'h10C;
 
+    logic [63:0] wdata64_bits;
+    logic [63:0] wdata64_mask;
+    logic [7:0] be64;
+
     logic [dm::ProgBufSize/2-1:0][63:0]   progbuf;
     logic [4:0][63:0]   abstract_cmd;
     logic [NrHarts-1:0] halted_d, halted_q;
@@ -177,10 +181,34 @@ module dm_mem #(
 
     end
 
+    if (dm::DataCount <= 2) begin
+        assign data_o = data_valid_o ?
+            ((wdata64_bits & wdata64_mask) | (data_i & ~wdata64_mask)) :
+            data_i;
+    end
+    else begin
+        localparam int DataShiftAddrBits = $clog2(dm::DataCount/2);
+        logic [DataShiftAddrBits+5:0] data_shift;
+        logic [dm::DataCount-1:0][31:0] data_bits;
+        logic [dm::DataCount-1:0][31:0] data_mask;
+
+        assign data_shift = data_valid_o ? (addr_i[DataShiftAddrBits+3:3] << 6) : '0;
+        assign data_bits = wdata64_bits << data_shift;
+        assign data_mask = wdata64_mask << data_shift;
+        assign data_o = data_valid_o ?
+            ((data_bits & data_mask) | (data_i & ~data_mask)) :
+            data_i;
+    end
+
+    if (BusWidth == 64) begin
+        assign be64 = be_i;
+    end
+    else begin
+        assign be64 = addr_i[2] ? {be_i,4'd0} : {4'd0,be_i};
+    end
+
     // read/write logic
     always_comb begin
-        automatic logic [63:0] data_bits;
-
         halted_d     = halted_q;
         resuming_d   = resuming_q;
         rdata_o      = (BusWidth == 64) ?
@@ -189,8 +217,8 @@ module dm_mem #(
                               (fwd_rom_q ? rom_rdata[63:32] : rdata_q[63:32]) :
                               (fwd_rom_q ? rom_rdata[31: 0] : rdata_q[31: 0]));
         rdata_d      = rdata_q;
-        // convert the data in bits representation
-        data_bits    = data_i;
+        wdata64_bits = '0;
+        wdata64_mask = '0;
         // write data in csr register
         data_valid_o = 1'b0;
         exception    = 1'b0;
@@ -223,11 +251,8 @@ module dm_mem #(
                     // core can write data registers
                     [(dm::DataAddr):DataEnd]: begin
                         data_valid_o = 1'b1;
-                        for (int i = 0; i < $bits(be_i); i++) begin
-                            if (be_i[i]) begin
-                                data_bits[i*8+:8] = wdata_i[i*8+:8];
-                            end
-                        end
+                        wdata64_bits = (BusWidth == 64) ? wdata_i : (addr_i[2] ? {wdata_i,32'd0} : {32'd0,wdata_i});
+                        wdata64_mask = {{8{be64[7]}}, {8{be64[6]}}, {8{be64[5]}}, {8{be64[4]}}, {8{be64[3]}}, {8{be64[2]}}, {8{be64[1]}}, {8{be64[0]}}};
                     end
                     default ;
                 endcase
@@ -258,8 +283,8 @@ module dm_mem #(
 
                     [DataBase:DataEnd]: begin
                         rdata_d = {
-                                  data_i[(addr_i[DbgAddressBits-1:3] - DataBase[DbgAddressBits-1:3] + 1)],
-                                  data_i[(addr_i[DbgAddressBits-1:3] - DataBase[DbgAddressBits-1:3])]
+                                  data_i[((addr_i[DbgAddressBits-1:3] - DataBase[DbgAddressBits-1:3])<<1) + 1],
+                                  data_i[(addr_i[DbgAddressBits-1:3] - DataBase[DbgAddressBits-1:3])<<1]
                                   };
                     end
 
@@ -290,7 +315,6 @@ module dm_mem #(
             end
         end
 
-        data_o = data_bits;
     end
 
     always_comb begin : abstract_cmd_rom
