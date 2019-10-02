@@ -10,16 +10,3 @@ riscv-dbg:
         src/dmi_jtag_tap.sv,
         src/dm_sba.sv,
   ]
-  jg_slint_top_name: [
-    dm_top
-  ]
-  jg_slint_elab_opt: [
-  ]
-  jg_slint_postelab_cmds: [
-  ]
-  jg_slint_clocks: [
-    clk_i,
-  ]
-  jg_slint_resets: [
-    ~rst_ni,
-  ]
