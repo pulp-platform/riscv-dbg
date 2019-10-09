@@ -134,7 +134,7 @@ package dm;
 
     typedef enum logic [2:0] {  CmdErrNone, CmdErrBusy, CmdErrNotSupported,
                                 CmdErrorException, CmdErrorHaltResume,
-                                CmdErrorBus, CmdErrorOther = 7
+                                CmdErrorBus, CmdErrorOther = 3'd7
                              } cmderr_e;
 
     typedef struct packed {

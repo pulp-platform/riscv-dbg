@@ -455,7 +455,9 @@ module dm_mem #(
         end
     end
 
-    for (genvar k = 0; k < NrHarts; k++) begin : gen_halted
+    generate
+    genvar k;
+    for (k = 0; k < NrHarts; k++) begin : gen_halted
         always_ff @(posedge clk_i or negedge rst_ni) begin
             if (!rst_ni) begin
                 halted_q[k]   <= 1'b0;
@@ -466,5 +468,6 @@ module dm_mem #(
             end
         end
     end
+    endgenerate
 
 endmodule

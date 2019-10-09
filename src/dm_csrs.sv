@@ -576,7 +576,9 @@ module dm_csrs #(
     end
 
 
-    for (genvar k = 0; k < NrHarts; k++) begin : gen_havereset
+    generate
+    genvar k;
+    for (k = 0; k < NrHarts; k++) begin : gen_havereset
         always_ff @(posedge clk_i or negedge rst_ni) begin
             if (!rst_ni) begin
                 havereset_q[k] <= 1'b1;
@@ -585,6 +587,7 @@ module dm_csrs #(
             end
         end
     end
+    endgenerate
 
 ///////////////////////////////////////////////////////
 // assertions

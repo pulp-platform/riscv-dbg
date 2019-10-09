@@ -61,11 +61,11 @@ module dmi_jtag_tap #(
     tap_state_e tap_state_q, tap_state_d;
 
     typedef enum logic [IrLength-1:0] {
-        BYPASS0   = 'h0,
-        IDCODE    = 'h1,
-        DTMCSR    = 'h10,
-        DMIACCESS = 'h11,
-        BYPASS1   = 'h1f
+        BYPASS0   = 5'h0,
+        IDCODE    = 5'h1,
+        DTMCSR    = 5'h10,
+        DMIACCESS = 5'h11,
+        BYPASS1   = 5'h1f
     } ir_reg_e;
 
     typedef struct packed {
