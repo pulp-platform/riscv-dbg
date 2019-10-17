@@ -102,7 +102,7 @@ module dm_csrs #(
   logic [32-1:0] halted_flat3;
 
   // haltsum0
-  always_comb begin
+  always_comb begin : p_haltsum0
     halted              = '0;
     halted[NrHarts-1:0] = halted_i;
     halted_reshaped0    = halted;
@@ -433,8 +433,9 @@ module dm_csrs #(
     end
 
     // update data registers
-    if (data_valid_i)
+    if (data_valid_i) begin
       data_d = data_i;
+    end
 
     // set the havereset flag when we did a ndmreset
     if (ndmreset_o) begin
@@ -482,7 +483,7 @@ module dm_csrs #(
   end
 
   // output multiplexer
-  always_comb begin
+  always_comb begin : p_outmux
     selected_hart = hartsel_o[HartSelLen-1:0];
     // default assignment
     haltreq_o = '0;
@@ -599,4 +600,4 @@ module dm_csrs #(
 `endif
 //pragma translate_on
 
-endmodule
+endmodule : dm_csrs

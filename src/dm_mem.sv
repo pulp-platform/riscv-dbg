@@ -110,7 +110,7 @@ module dm_mem #(
   state_e state_d, state_q;
 
   // hart ctrl queue
-  always_comb begin
+  always_comb begin : p_hart_ctrl_queue
     cmderror_valid_o = 1'b0;
     cmderror_o       = dm::CmdErrNone;
     state_d          = state_q;
@@ -142,15 +142,17 @@ module dm_mem #(
         cmdbusy_o = 1'b1;
         go        = 1'b1;
         // the thread is now executing the command, track its state
-        if (going)
+        if (going) begin
           state_d = CmdExecuting;
+        end
       end
 
       Resume: begin
         cmdbusy_o = 1'b1;
         resume = 1'b1;
-        if (resuming_o[hartsel_i])
+        if (resuming_o[hartsel_i]) begin
           state_d = Idle;
+        end
       end
 
       CmdExecuting: begin
@@ -177,7 +179,7 @@ module dm_mem #(
   end
 
   // read/write logic
-  always_comb begin
+  always_comb begin : p_rw_logic
     automatic logic [63:0] data_bits;
 
     halted_d     = halted_q;
@@ -292,7 +294,7 @@ module dm_mem #(
     data_o = data_bits;
   end
 
-  always_comb begin : abstract_cmd_rom
+  always_comb begin : p_abstract_cmd_rom
     // this abstract command is currently unsupported
     unsupported_command = 1'b0;
     // default memory
@@ -437,7 +439,7 @@ module dm_mem #(
   assign fwd_rom_d = (addr_i[DbgAddressBits-1:0] >= dm::HaltAddress[DbgAddressBits-1:0]) ?
                      1'b1 : 1'b0;
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always_ff @(posedge clk_i or negedge rst_ni) begin : p_regs
     if (!rst_ni) begin
       fwd_rom_q       <= 1'b0;
       rdata_q         <= '0;
@@ -463,4 +465,4 @@ module dm_mem #(
     end
   end
 
-endmodule
+endmodule : dm_mem

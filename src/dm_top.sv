@@ -219,4 +219,4 @@ module dm_top #(
   end
 `endif
 
-endmodule
+endmodule : dm_top

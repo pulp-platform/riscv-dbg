@@ -383,4 +383,4 @@ package dm;
     return 32'h00000000;
   endfunction
 
-endpackage
+endpackage : dm

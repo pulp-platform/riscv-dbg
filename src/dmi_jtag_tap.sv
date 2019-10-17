@@ -88,7 +88,7 @@ module dmi_jtag_tap #(
   ir_reg_e              jtag_ir_d, jtag_ir_q; // IR register -> this gets captured from shift register upon update_ir
   logic capture_ir, shift_ir, pause_ir, update_ir;
 
-  always_comb begin
+  always_comb begin : p_jtag
     jtag_ir_shift_d = jtag_ir_shift_q;
     jtag_ir_d       = jtag_ir_q;
 
@@ -114,7 +114,7 @@ module dmi_jtag_tap #(
     end
   end
 
-  always_ff @(posedge tck_i, negedge trst_ni) begin
+  always_ff @(posedge tck_i, negedge trst_ni) begin : p_jtag_ir_reg
     if (!trst_ni) begin
       jtag_ir_shift_q <= '0;
       jtag_ir_q       <= IDCODE;
@@ -138,7 +138,7 @@ module dmi_jtag_tap #(
 
   assign dmi_reset_o = dtmcs_q.dmireset;
 
-  always_comb begin
+  always_comb begin : p_tap_dr
     idcode_d = idcode_q;
     bypass_d = bypass_q;
     dtmcs_d  = dtmcs_q;
@@ -175,7 +175,7 @@ module dmi_jtag_tap #(
   // ----------------
   // Data reg select
   // ----------------
-  always_comb begin
+  always_comb begin : p_data_reg_sel
     dmi_access_o   = 1'b0;
     dtmcs_select_o = 1'b0;
     idcode_select  = 1'b0;
@@ -195,7 +195,7 @@ module dmi_jtag_tap #(
   // ----------------
   logic tdo_mux;
 
-  always_comb begin
+  always_comb begin : p_out_sel
     // we are shifting out the IR register
     if (shift_ir) begin
       tdo_mux = jtag_ir_shift_q[0];
@@ -210,7 +210,9 @@ module dmi_jtag_tap #(
     end
   end
 
+  // ----------------
   // DFT
+  // ----------------
   logic tck_n, tck_ni;
 
   cluster_clock_inverter i_tck_inv (
@@ -226,7 +228,7 @@ module dmi_jtag_tap #(
   );
 
   // TDO changes state at negative edge of TCK
-  always_ff @(posedge tck_n, negedge trst_ni) begin
+  always_ff @(posedge tck_n, negedge trst_ni) begin : p_tdo_regs
     if (!trst_ni) begin
       td_o     <= 1'b0;
       tdo_oe_o <= 1'b0;
@@ -239,7 +241,7 @@ module dmi_jtag_tap #(
   // TAP FSM
   // ----------------
   // Determination of next state; purely combinatorial
-  always_comb begin
+  always_comb begin : p_tap_fsm
     test_logic_reset_o = 1'b0;
 
     capture_dr_o       = 1'b0;
@@ -326,8 +328,7 @@ module dmi_jtag_tap #(
     endcase
   end
 
-
-  always_ff @(posedge tck_i or negedge trst_ni) begin
+  always_ff @(posedge tck_i or negedge trst_ni) begin : p_regs
     if (!trst_ni) begin
       tap_state_q <= RunTestIdle;
       idcode_q    <= IdcodeValue;
@@ -341,4 +342,4 @@ module dmi_jtag_tap #(
     end
   end
 
-endmodule
+endmodule : dmi_jtag_tap

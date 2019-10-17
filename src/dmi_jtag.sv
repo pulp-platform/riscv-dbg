@@ -88,7 +88,7 @@ module dmi_jtag #(
   logic error_dmi_busy;
   dmi_error_e error_d, error_q;
 
-  always_comb begin
+  always_comb begin : p_fsm
     error_dmi_busy = 1'b0;
     // default assignments
     state_d   = state_q;
@@ -170,7 +170,7 @@ module dmi_jtag #(
   // shift register
   assign dmi_tdo = dr_q[0];
 
-  always_comb begin
+  always_comb begin : p_shift
     dr_d    = dr_q;
 
     if (capture_dr) begin
@@ -185,7 +185,9 @@ module dmi_jtag #(
     end
 
     if (shift_dr) begin
-      if (dmi_access) dr_d = {dmi_tdi, dr_q[$bits(dr_q)-1:1]};
+      if (dmi_access) begin
+        dr_d = {dmi_tdi, dr_q[$bits(dr_q)-1:1]};
+      end
     end
 
     if (test_logic_reset) begin
@@ -259,4 +261,4 @@ module dmi_jtag #(
     .core_dmi_valid_i  ( dmi_resp_valid_i )
   );
 
-endmodule
+endmodule : dmi_jtag

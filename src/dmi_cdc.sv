@@ -69,4 +69,5 @@ module dmi_cdc (
     .dst_valid_o ( jtag_dmi_valid_o ),
     .dst_ready_i ( jtag_dmi_ready_i )
   );
-endmodule
+
+endmodule : dmi_cdc

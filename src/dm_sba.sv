@@ -63,7 +63,7 @@ module dm_sba #(
 
   assign sbbusy_o = (state_q != Idle) ? 1'b1 : 1'b0;
 
-  always_comb begin
+  always_comb begin : p_fsm
     req     = 1'b0;
     address = sbaddress_i;
     we      = 1'b0;
@@ -142,7 +142,7 @@ module dm_sba #(
     // further error handling should go here ...
   end
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always_ff @(posedge clk_i or negedge rst_ni) begin : p_regs
     if (!rst_ni) begin
       state_q <= Idle;
     end else begin
@@ -169,4 +169,4 @@ module dm_sba #(
   `endif
   //pragma translate_on
 
-endmodule
+endmodule : dm_sba
