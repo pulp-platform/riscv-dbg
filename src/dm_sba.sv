@@ -96,16 +96,16 @@ module dm_sba #(
         // generate byte enable mask
         case (sbaccess_i)
           3'b000: begin
-            if (BusWidth == 64) be[ sbaddress_i[2:0]] = '1;
-            else                be[ sbaddress_i[1:0]] = '1;
+            if (BusWidth == 32'd64) be[ sbaddress_i[2:0]] = '1;
+            else                    be[ sbaddress_i[1:0]] = '1;
           end
           3'b001: begin
-            if (BusWidth == 64) be[{sbaddress_i[2:1], 1'b0} +: 2] = '1;
-            else                be[{sbaddress_i[1:1], 1'b0} +: 2] = '1;
+            if (BusWidth == 32'd64) be[{sbaddress_i[2:1], 1'b0} +: 2] = '1;
+            else                    be[{sbaddress_i[1:1], 1'b0} +: 2] = '1;
           end
           3'b010: begin
-            if (BusWidth == 64) be[{sbaddress_i[2:2], 2'b0} +: 4] = '1;
-            else                be = '1;
+            if (BusWidth == 32'd64) be[{sbaddress_i[2:2], 2'b0} +: 4] = '1;
+            else                    be = '1;
           end
           3'b011: be = '1;
           default:;

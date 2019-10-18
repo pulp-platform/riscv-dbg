@@ -520,11 +520,11 @@ module dm_csrs #(
     sbcs_d.sbbusy               = sbbusy_i;
     sbcs_d.sbasize              = BusWidth;
     sbcs_d.sbaccess128          = 1'b0;
-    sbcs_d.sbaccess64           = BusWidth == 64;
-    sbcs_d.sbaccess32           = BusWidth == 32;
+    sbcs_d.sbaccess64           = logic'(BusWidth == 32'd64);
+    sbcs_d.sbaccess32           = logic'(BusWidth == 32'd32);
     sbcs_d.sbaccess16           = 1'b0;
     sbcs_d.sbaccess8            = 1'b0;
-    sbcs_d.sbaccess             = BusWidth == 64 ? 2'd3 : 2'd2;
+    sbcs_d.sbaccess             = (BusWidth == 32'd64) ? 2'd3 : 2'd2;
   end
 
   // output multiplexer

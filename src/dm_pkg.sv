@@ -302,69 +302,97 @@ package dm;
 
 
   // Instruction Generation Helpers
-  function automatic logic [31:0] jal (logic[4:0] rd, logic [20:0] imm);
+  function automatic logic [31:0] jal (logic [4:0]  rd,
+                                       logic [20:0] imm);
     // OpCode Jal
     return {imm[20], imm[10:1], imm[11], imm[19:12], rd, 7'h6f};
   endfunction
 
-  function automatic logic [31:0] jalr (logic[4:0] rd, logic[4:0] rs1, logic [11:0] offset);
+  function automatic logic [31:0] jalr (logic [4:0]  rd,
+                                        logic [4:0]  rs1,
+                                        logic [11:0] offset);
     // OpCode Jal
     return {offset[11:0], rs1, 3'b0, rd, 7'h67};
   endfunction
 
-  function automatic logic [31:0] andi (logic[4:0] rd, logic[4:0] rs1, logic [11:0] imm);
+  function automatic logic [31:0] andi (logic [4:0]  rd,
+                                        logic [4:0]  rs1,
+                                        logic [11:0] imm);
     // OpCode andi
     return {imm[11:0], rs1, 3'h7, rd, 7'h13};
   endfunction
 
-  function automatic logic [31:0] slli (logic[4:0] rd, logic[4:0] rs1, logic [5:0] shamt);
+  function automatic logic [31:0] slli (logic [4:0] rd,
+                                        logic [4:0] rs1,
+                                        logic [5:0] shamt);
     // OpCode slli
     return {6'b0, shamt[5:0], rs1, 3'h1, rd, 7'h13};
   endfunction
 
-  function automatic logic [31:0] srli (logic[4:0] rd, logic[4:0] rs1, logic [5:0] shamt);
+  function automatic logic [31:0] srli (logic [4:0] rd,
+                                        logic [4:0] rs1,
+                                        logic [5:0] shamt);
     // OpCode srli
     return {6'b0, shamt[5:0], rs1, 3'h5, rd, 7'h13};
   endfunction
 
-  function automatic logic [31:0] load (logic [2:0] size, logic[4:0] dest, logic[4:0] base, logic [11:0] offset);
+  function automatic logic [31:0] load (logic [2:0]  size,
+                                        logic [4:0]  dest,
+                                        logic [4:0]  base,
+                                        logic [11:0] offset);
     // OpCode Load
     return {offset[11:0], base, size, dest, 7'h03};
   endfunction
 
-  function automatic logic [31:0] auipc (logic[4:0] rd, logic [20:0] imm);
+  function automatic logic [31:0] auipc (logic [4:0]  rd,
+                                         logic [20:0] imm);
     // OpCode Auipc
     return {imm[20], imm[10:1], imm[11], imm[19:12], rd, 7'h17};
   endfunction
 
-  function automatic logic [31:0] store (logic [2:0] size, logic[4:0] src, logic[4:0] base, logic [11:0] offset);
+  function automatic logic [31:0] store (logic [2:0]  size,
+                                         logic [4:0]  src,
+                                         logic [4:0]  base,
+                                         logic [11:0] offset);
     // OpCode Store
     return {offset[11:5], src, base, size, offset[4:0], 7'h23};
   endfunction
 
-  function automatic logic [31:0] float_load (logic [2:0] size, logic[4:0] dest, logic[4:0] base, logic [11:0] offset);
+  function automatic logic [31:0] float_load (logic [2:0]  size,
+                                              logic [4:0]  dest,
+                                              logic [4:0]  base,
+                                              logic [11:0] offset);
     // OpCode Load
     return {offset[11:0], base, size, dest, 7'b00_001_11};
   endfunction
 
-  function automatic logic [31:0] float_store (logic [2:0] size, logic[4:0] src, logic[4:0] base, logic [11:0] offset);
+  function automatic logic [31:0] float_store (logic [2:0]  size,
+                                               logic [4:0]  src,
+                                               logic [4:0]  base,
+                                               logic [11:0] offset);
     // OpCode Store
     return {offset[11:5], src, base, size, offset[4:0], 7'b01_001_11};
   endfunction
 
-  function automatic logic [31:0] csrw (csr_reg_t csr, logic[4:0] rs1);
+  function automatic logic [31:0] csrw (csr_reg_t   csr,
+                                        logic [4:0] rs1);
     // CSRRW, rd, OpCode System
     return {csr, rs1, 3'h1, 5'h0, 7'h73};
   endfunction
 
-  function automatic logic [31:0] csrr (csr_reg_t csr, logic [4:0] dest);
+  function automatic logic [31:0] csrr (csr_reg_t   csr,
+                                        logic [4:0] dest);
     // rs1, CSRRS, rd, OpCode System
     return {csr, 5'h0, 3'h2, dest, 7'h73};
   endfunction
 
-  function automatic logic [31:0] branch(logic [4:0] src2, logic [4:0] src1, logic [2:0] funct3, logic [11:0] offset);
+  function automatic logic [31:0] branch(logic [4:0]  src2,
+                                         logic [4:0]  src1,
+                                         logic [2:0]  funct3,
+                                         logic [11:0] offset);
     // OpCode Branch
-    return {offset[11], offset[9:4], src2, src1, funct3, offset[3:0], offset[10], 7'b11_000_11};
+    return {offset[11], offset[9:4], src2, src1, funct3,
+        offset[3:0], offset[10], 7'b11_000_11};
   endfunction
 
   function automatic logic [31:0] ebreak ();

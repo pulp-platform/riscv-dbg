@@ -102,7 +102,7 @@ module dmi_jtag_tap #(
 
     // capture IR register
     if (capture_ir) begin
-      jtag_ir_shift_d =  'b0101;
+      jtag_ir_shift_d =  IrLength'(4'b0101);
     end
 
     // update IR register
@@ -155,10 +155,10 @@ module dmi_jtag_tap #(
                       dmihardreset : 1'b0,
                       dmireset     : 1'b0,
                       zero0        : '0,
-                      idle         : 'd1, // 1: Enter Run-Test/Idle and leave it immediately
+                      idle         : 3'd1, // 1: Enter Run-Test/Idle and leave it immediately
                       dmistat      : dmi_error_i, // 0: No error, 1: Op failed, 2: too fast
-                      abits        : 'd7, // The size of address in dmi
-                      version      : 'd1  // Version described in spec version 0.13 (and later?)
+                      abits        : 6'd7, // The size of address in dmi
+                      version      : 4'd1  // Version described in spec version 0.13 (and later?)
                     };
       end
     end
