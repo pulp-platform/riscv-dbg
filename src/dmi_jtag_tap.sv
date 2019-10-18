@@ -84,9 +84,12 @@ module dmi_jtag_tap #(
   // ----------------
   // IR logic
   // ----------------
-  logic [IrLength-1:0]  jtag_ir_shift_d, jtag_ir_shift_q; // shift register
-  ir_reg_e              jtag_ir_d, jtag_ir_q; // IR register -> this gets captured from shift register upon update_ir
-  logic capture_ir, shift_ir, pause_ir, update_ir;
+
+  // shift register
+  logic [IrLength-1:0]  jtag_ir_shift_d, jtag_ir_shift_q;
+  // IR register -> this gets captured from shift register upon update_ir
+  ir_reg_e              jtag_ir_d, jtag_ir_q;
+  logic capture_ir, shift_ir, update_ir; // pause_ir
 
   always_comb begin : p_jtag
     jtag_ir_shift_d = jtag_ir_shift_q;
@@ -138,7 +141,7 @@ module dmi_jtag_tap #(
 
   assign dmi_reset_o = dtmcs_q.dmireset;
 
-  always_comb begin : p_tap_dr
+  always_comb begin
     idcode_d = idcode_q;
     bypass_d = bypass_q;
     dtmcs_d  = dtmcs_q;
@@ -152,7 +155,7 @@ module dmi_jtag_tap #(
                       dmihardreset : 1'b0,
                       dmireset     : 1'b0,
                       zero0        : '0,
-                      idle         : 'd1,         // 1: Enter Run-Test/Idle and leave it immediately
+                      idle         : 'd1, // 1: Enter Run-Test/Idle and leave it immediately
                       dmistat      : dmi_error_i, // 0: No error, 1: Op failed, 2: too fast
                       abits        : 'd7, // The size of address in dmi
                       version      : 'd1  // Version described in spec version 0.13 (and later?)
@@ -161,9 +164,9 @@ module dmi_jtag_tap #(
     end
 
     if (shift_dr_o) begin
-      if (idcode_select)  idcode_d = {td_i, idcode_q[31:1]};
+      if (idcode_select)  idcode_d = {td_i, 31'(idcode_q >> 1)};
       if (bypass_select)  bypass_d = td_i;
-      if (dtmcs_select_o) dtmcs_d  = {td_i, dtmcs_q[31:1]};
+      if (dtmcs_select_o) dtmcs_d  = {td_i, 31'(dtmcs_q >> 1)};
     end
 
     if (test_logic_reset_o) begin
@@ -203,7 +206,7 @@ module dmi_jtag_tap #(
     end else begin
       case (jtag_ir_q)    // synthesis parallel_case
         IDCODE:         tdo_mux = idcode_q[0];     // Reading ID code
-        DTMCSR:         tdo_mux = dtmcs_q[0];
+        DTMCSR:         tdo_mux = dtmcs_q.version[0];
         DMIACCESS:      tdo_mux = dmi_tdo_i;       // Read from DMI TDO
         default:        tdo_mux = bypass_q;      // BYPASS instruction
       endcase
@@ -242,6 +245,7 @@ module dmi_jtag_tap #(
   // ----------------
   // Determination of next state; purely combinatorial
   always_comb begin : p_tap_fsm
+
     test_logic_reset_o = 1'b0;
 
     capture_dr_o       = 1'b0;
@@ -250,9 +254,11 @@ module dmi_jtag_tap #(
 
     capture_ir         = 1'b0;
     shift_ir           = 1'b0;
-    pause_ir           = 1'b0;
+    // pause_ir           = 1'b0; unused
     update_ir          = 1'b0;
 
+    // note that tap_state_d does not have a default assignment since the
+    // case statement is full
     case (tap_state_q)
       TestLogicReset: begin
         tap_state_d = (tms_i) ? TestLogicReset : RunTestIdle;
@@ -307,10 +313,10 @@ module dmi_jtag_tap #(
         tap_state_d = (tms_i) ? Exit1Ir : ShiftIr;
       end
       Exit1Ir: begin
-            tap_state_d = (tms_i) ? UpdateIr : PauseIr;
+        tap_state_d = (tms_i) ? UpdateIr : PauseIr;
       end
       PauseIr: begin
-        pause_ir = 1'b1;
+        // pause_ir = 1'b1; // unused
         tap_state_d = (tms_i) ? Exit2Ir : PauseIr;
       end
       Exit2Ir: begin
@@ -324,7 +330,7 @@ module dmi_jtag_tap #(
         update_ir = 1'b1;
         tap_state_d = (tms_i) ? SelectDrScan : RunTestIdle;
       end
-      default: tap_state_d = TestLogicReset;  // can't actually happen
+      default: ; // can't actually happen
     endcase
   end
 

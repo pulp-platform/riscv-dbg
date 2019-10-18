@@ -195,7 +195,7 @@ module dmi_jtag #(
     end
   end
 
-  always_ff @(posedge tck_i or negedge trst_ni) begin
+  always_ff @(posedge tck_i or negedge trst_ni) begin : p_regs
     if (!trst_ni) begin
       dr_q      <= '0;
       state_q   <= Idle;
@@ -224,7 +224,7 @@ module dmi_jtag #(
     .td_i,
     .td_o,
     .tdo_oe_o,
-    .testmode_i         ( testmode_i       ),
+    .testmode_i,
     .test_logic_reset_o ( test_logic_reset ),
     .shift_dr_o         ( shift_dr         ),
     .update_dr_o        ( update_dr        ),
