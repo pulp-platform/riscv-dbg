@@ -17,9 +17,9 @@
 */
 
 module dm_mem #(
-  parameter int                 NrHarts          = -1,
-  parameter int                 BusWidth         = -1,
-  parameter logic [NrHarts-1:0] SelectableHarts  = -1
+  parameter int unsigned        NrHarts          =  1,
+  parameter int unsigned        BusWidth         = 32,
+  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}}
 ) (
   input  logic                             clk_i,       // Clock
   input  logic                             rst_ni,      // debug module reset
@@ -57,24 +57,26 @@ module dm_mem #(
   output logic [BusWidth-1:0]              rdata_o
 );
 
-  localparam int HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
-  localparam int MaxAar = (BusWidth == 64) ? 4 : 3;
-  localparam DbgAddressBits = 12;
-  localparam logic [DbgAddressBits-1:0] DataBase = (dm::DataAddr);
-  localparam logic [DbgAddressBits-1:0] DataEnd = (dm::DataAddr + 4*dm::DataCount);
-  localparam logic [DbgAddressBits-1:0] ProgBufBase = (dm::DataAddr - 4*dm::ProgBufSize);
-  localparam logic [DbgAddressBits-1:0] ProgBufEnd = (dm::DataAddr - 1);
-  localparam logic [DbgAddressBits-1:0] AbstractCmdBase = (ProgBufBase - 4*10);
-  localparam logic [DbgAddressBits-1:0] AbstractCmdEnd = (ProgBufBase - 1);
-  localparam logic [DbgAddressBits-1:0] WhereTo   = 'h300;
-  localparam logic [DbgAddressBits-1:0] FlagsBase = 'h400;
-  localparam logic [DbgAddressBits-1:0] FlagsEnd  = 'h7FF;
+  localparam int unsigned DbgAddressBits = 12;
+  localparam int unsigned HartSelLen     = (NrHarts == 1) ? 1 : $clog2(NrHarts);
+  localparam int unsigned NrHartsAligned = 2**HartSelLen;
+  localparam int unsigned MaxAar         = (BusWidth == 64) ? 4 : 3;
 
+  localparam logic [DbgAddressBits-1:0] DataBaseAddr        = (dm::DataAddr);
+  localparam logic [DbgAddressBits-1:0] DataEndAddr         = (dm::DataAddr + 4*dm::DataCount);
+  localparam logic [DbgAddressBits-1:0] ProgBufBaseAddr     = (dm::DataAddr - 4*dm::ProgBufSize);
+  localparam logic [DbgAddressBits-1:0] ProgBufEndAddr      = (dm::DataAddr - 1);
+  localparam logic [DbgAddressBits-1:0] AbstractCmdBaseAddr = (ProgBufBaseAddr - 4*10);
+  localparam logic [DbgAddressBits-1:0] AbstractCmdEndAddr  = (ProgBufBaseAddr - 1);
 
-  localparam logic [DbgAddressBits-1:0] Halted    = 'h100;
-  localparam logic [DbgAddressBits-1:0] Going     = 'h104;
-  localparam logic [DbgAddressBits-1:0] Resuming  = 'h108;
-  localparam logic [DbgAddressBits-1:0] Exception = 'h10C;
+  localparam logic [DbgAddressBits-1:0] WhereToAddr   = 'h300;
+  localparam logic [DbgAddressBits-1:0] FlagsBaseAddr = 'h400;
+  localparam logic [DbgAddressBits-1:0] FlagsEndAddr  = 'h7FF;
+
+  localparam logic [DbgAddressBits-1:0] HaltedAddr    = 'h100;
+  localparam logic [DbgAddressBits-1:0] GoingAddr     = 'h104;
+  localparam logic [DbgAddressBits-1:0] ResumingAddr  = 'h108;
+  localparam logic [DbgAddressBits-1:0] ExceptionAddr = 'h10C;
 
   logic [dm::ProgBufSize/2-1:0][63:0]   progbuf;
   logic [4:0][63:0]   abstract_cmd;
@@ -206,23 +208,23 @@ module dm_mem #(
       // this is a write
       if (we_i) begin
         unique case (addr_i[DbgAddressBits-1:0]) inside
-          Halted: begin
+          HaltedAddr: begin
             halted[hart_sel] = 1'b1;
             halted_d[hart_sel] = 1'b1;
           end
-          Going: begin
+          GoingAddr: begin
             going = 1'b1;
           end
-          Resuming: begin
+          ResumingAddr: begin
             // clear the halted flag as the hart resumed execution
             halted_d[hart_sel] = 1'b0;
             // set the resuming flag which needs to be cleared by the debugger
             resuming_d[hart_sel] = 1'b1;
           end
           // an exception occurred during execution
-          Exception: exception = 1'b1;
+          ExceptionAddr: exception = 1'b1;
           // core can write data registers
-          [(dm::DataAddr):DataEnd]: begin
+          [(dm::DataAddr):DataEndAddr]: begin
             data_valid_o = 1'b1;
             for (int i = 0; i < $bits(be_i); i++) begin
               if (be_i[i]) begin
@@ -237,10 +239,10 @@ module dm_mem #(
       end else begin
         unique case (addr_i[DbgAddressBits-1:0]) inside
           // variable ROM content
-          WhereTo: begin
+          WhereToAddr: begin
             // variable jump to abstract cmd, program_buffer or resume
             if (resumereq_i[hart_sel]) begin
-              rdata_d = {32'b0, dm::jal('0, dm::ResumeAddress[11:0]-WhereTo)};
+              rdata_d = {32'b0, dm::jal('0, dm::ResumeAddress[11:0]-WhereToAddr)};
             end
 
             // there is a command active so jump there
@@ -249,38 +251,38 @@ module dm_mem #(
               // keep this statement narrow to not catch invalid commands
               if (cmd_i.cmdtype == dm::AccessRegister &&
                   !ac_ar.transfer && ac_ar.postexec) begin
-                rdata_d = {32'b0, dm::jal('0, ProgBufBase-WhereTo)};
+                rdata_d = {32'b0, dm::jal('0, ProgBufBaseAddr-WhereToAddr)};
               // this is a legit abstract cmd -> execute it
               end else begin
-                rdata_d = {32'b0, dm::jal('0, AbstractCmdBase-WhereTo)};
+                rdata_d = {32'b0, dm::jal('0, AbstractCmdBaseAddr-WhereToAddr)};
               end
             end
           end
 
-          [DataBase:DataEnd]: begin
+          [DataBaseAddr:DataEndAddr]: begin
             rdata_d = {
-                      data_i[(addr_i[DbgAddressBits-1:3] - DataBase[DbgAddressBits-1:3] + 1)],
-                      data_i[(addr_i[DbgAddressBits-1:3] - DataBase[DbgAddressBits-1:3])]
+                      data_i[(addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3] + 1)],
+                      data_i[(addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3])]
                       };
           end
 
-          [ProgBufBase:ProgBufEnd]: begin
+          [ProgBufBaseAddr:ProgBufEndAddr]: begin
             rdata_d = progbuf[(addr_i[DbgAddressBits-1:3] -
-                          ProgBufBase[DbgAddressBits-1:3])];
+                          ProgBufBaseAddr[DbgAddressBits-1:3])];
           end
 
           // two slots for abstract command
-          [AbstractCmdBase:AbstractCmdEnd]: begin
+          [AbstractCmdBaseAddr:AbstractCmdEndAddr]: begin
             // return the correct address index
             rdata_d = abstract_cmd[(addr_i[DbgAddressBits-1:3] -
-                           AbstractCmdBase[DbgAddressBits-1:3])];
+                           AbstractCmdBaseAddr[DbgAddressBits-1:3])];
           end
           // harts are polling for flags here
-          [FlagsBase:FlagsEnd]: begin
+          [FlagsBaseAddr:FlagsEndAddr]: begin
             automatic logic [7:0][7:0] rdata;
             rdata = '0;
             // release the corresponding hart
-            if (({addr_i[DbgAddressBits-1:3], 3'b0} - FlagsBase[DbgAddressBits-1:0]) ==
+            if (({addr_i[DbgAddressBits-1:3], 3'b0} - FlagsBaseAddr[DbgAddressBits-1:0]) ==
                 {hartsel_i[DbgAddressBits-1:3], 3'b0}) begin
               rdata[hartsel_i[2:0]] = {6'b0, resume, go};
             end

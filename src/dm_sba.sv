@@ -16,7 +16,7 @@
 *
 */
 module dm_sba #(
-  parameter int BusWidth = -1
+  parameter int unsigned BusWidth = 32
 ) (
   input  logic                   clk_i,       // Clock
   input  logic                   rst_ni,

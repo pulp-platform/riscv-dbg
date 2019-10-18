@@ -18,11 +18,11 @@
 */
 
 module dm_top #(
-  parameter int                 NrHarts          = 1,
-  parameter int                 BusWidth         = 32,
-  parameter logic [NrHarts-1:0] SelectableHarts  = 1  // Bitmask to select physically available harts for systems
-                                                      // that don't use hart numbers in a contiguous fashion.
-
+  parameter int unsigned        NrHarts          = 1,
+  parameter int unsigned        BusWidth         = 32,
+  // Bitmask to select physically available harts for systems
+  // that don't use hart numbers in a contiguous fashion.
+  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}}
 ) (
   input  logic                  clk_i,       // clock
   input  logic                  rst_ni,      // asynchronous reset active low, connect PoR here, not the system reset

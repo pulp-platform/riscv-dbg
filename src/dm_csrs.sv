@@ -16,9 +16,9 @@
  */
 
 module dm_csrs #(
-  parameter int                 NrHarts          = 1,
-  parameter int                 BusWidth         = 32,
-  parameter logic [NrHarts-1:0] SelectableHarts  = 1
+  parameter int unsigned        NrHarts          = 1,
+  parameter int unsigned        BusWidth         = 32,
+  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}}
 ) (
   input  logic                              clk_i,           // Clock
   input  logic                              rst_ni,          // Asynchronous reset active low
@@ -79,7 +79,7 @@ module dm_csrs #(
   input  logic [2:0]                        sberror_i // bus error occurred
 );
   // the amount of bits we need to represent all harts
-  localparam HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
+  localparam int unsigned HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
   dm::dtm_op_e dtm_op;
   assign dtm_op = dm::dtm_op_e'(dmi_req_i.op);
 
@@ -112,7 +112,7 @@ module dm_csrs #(
   // haltsum1
   always_comb begin : p_reduction1
     halted_flat1 = '0;
-    for (int k=0; k<NrHarts/2**5+1; k++) begin
+    for (int unsigned k=0; k<NrHarts/2**5+1; k++) begin
       halted_flat1[k] = |halted_reshaped0[k];
     end
     halted_reshaped1 = halted_flat1;
@@ -121,7 +121,7 @@ module dm_csrs #(
   // haltsum2
   always_comb begin : p_reduction2
     halted_flat2 = '0;
-    for (int k=0; k<NrHarts/2**10+1; k++) begin
+    for (int unsigned k=0; k<NrHarts/2**10+1; k++) begin
       halted_flat2[k] = |halted_reshaped1[k];
     end
     halted_reshaped2 = halted_flat2;
@@ -130,7 +130,7 @@ module dm_csrs #(
   // haltsum3
   always_comb begin : p_reduction3
     halted_flat3 = '0;
-    for (int k=0; k<NrHarts/2**15+1; k++) begin
+    for (int unsigned k=0; k<NrHarts/2**15+1; k++) begin
       halted_flat3[k] = |halted_reshaped2[k];
     end
     haltsum3 = halted_flat3;

@@ -17,7 +17,7 @@
  */
 
 module dmi_jtag_tap #(
-  parameter int IrLength = 5,
+  parameter int unsigned IrLength = 5,
   // JTAG IDCODE Value
   parameter logic [31:0] IdcodeValue = 32'h00000001
   // xxxx             version
