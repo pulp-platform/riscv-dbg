@@ -111,7 +111,7 @@ module dm_csrs #(
     hartsel_idx0        = hartsel_o[19:5];
     halted[NrHarts-1:0] = halted_i;
     halted_reshaped0    = halted;
-    if (hartsel_idx0 < (NrHarts-1)/2**5+1) begin
+    if (hartsel_idx0 < 15'((NrHarts-1)/2**5+1)) begin
       haltsum0 = halted_reshaped0[hartsel_idx0];
     end
   end
@@ -128,7 +128,7 @@ module dm_csrs #(
     end
     halted_reshaped1 = halted_flat1;
 
-    if (hartsel_idx1 < (NrHarts/2**10+1)) begin
+    if (hartsel_idx1 < 10'((NrHarts/2**10+1))) begin
       haltsum1 = halted_reshaped1[hartsel_idx1];
     end
   end
@@ -145,7 +145,7 @@ module dm_csrs #(
     end
     halted_reshaped2 = halted_flat2;
 
-    if (hartsel_idx2 < (NrHarts/2**15+1)) begin
+    if (hartsel_idx2 < 5'((NrHarts/2**15+1))) begin
       haltsum2         = halted_reshaped2[hartsel_idx2];
     end
   end
@@ -214,6 +214,7 @@ module dm_csrs #(
   dm::sbcs_t sbcs;
   dm::dmcontrol_t dmcontrol;
   dm::abstractcs_t a_abstractcs;
+  logic [4:0] autoexecdata_idx;
   always_comb begin : csr_read_write
     // --------------------
     // Static Values (R/O)
@@ -237,8 +238,8 @@ module dm_csrs #(
 
     // as soon as we are out of the legal Hart region tell the debugger
     // that there are only non-existent harts
-    dmstatus.allnonexistent = logic'(hartsel_o > (NrHarts - 1));
-    dmstatus.anynonexistent = logic'(hartsel_o > (NrHarts - 1));
+    dmstatus.allnonexistent = logic'(32'(hartsel_o) > (NrHarts - 1));
+    dmstatus.anynonexistent = logic'(32'(hartsel_o) > (NrHarts - 1));
 
     // We are not allowed to be in multiple states at once. This is a to
     // make the running/halted and unavailable states exclusive.
@@ -282,6 +283,8 @@ module dm_csrs #(
     dmcontrol    = '0;
     a_abstractcs = '0;
 
+    autoexecdata_idx    = dmi_req_i.addr[4:0] - 5'(dm::Data0);
+
     // localparam int unsigned DataCountAlign = $clog2(dm::DataCount);
     // reads
     if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) begin
@@ -289,11 +292,12 @@ module dm_csrs #(
         [(dm::Data0):DataEnd]: begin
           // logic [$clog2(dm::DataCount)-1:0] resp_queue_idx;
           // resp_queue_idx = dmi_req_i.addr[4:0] - int'(dm::Data0);
-          resp_queue_data = data_q[dmi_req_i.addr[4:0] - int'(dm::Data0)];
+          resp_queue_data = data_q[$clog2(dm::DataCount)'(autoexecdata_idx)];
           if (!cmdbusy_i) begin
             // check whether we need to re-execute the command (just give a cmd_valid)
-            cmd_valid_d = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] -
-                          int'(dm::Data0)];
+            if (autoexecdata_idx < $bits(abstractauto_q.autoexecdata)) begin
+              cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
+            end
           end
         end
         dm::DMControl:    resp_queue_data = dmcontrol_q;
@@ -307,8 +311,8 @@ module dm_csrs #(
           resp_queue_data = progbuf_q[dmi_req_i.addr[$clog2(dm::ProgBufSize)-1:0]];
           if (!cmdbusy_i) begin
             // check whether we need to re-execute the command (just give a cmd_valid)
-            // TODO(zarubaf): check if offset is correct: without it this may assign Xes
-            cmd_valid_d = abstractauto_q.autoexecprogbuf[dmi_req_i.addr[3:0]+16];
+            // range of autoexecprogbuf is 31:16
+            cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
           end
         end
         dm::HaltSum0: resp_queue_data = haltsum0;
@@ -363,7 +367,9 @@ module dm_csrs #(
           if (!cmdbusy_i && dm::DataCount > 0) begin
             data_d[dmi_req_i.addr[$clog2(dm::DataCount)-1:0]] = dmi_req_i.data;
             // check whether we need to re-execute the command (just give a cmd_valid)
-            cmd_valid_d = abstractauto_q.autoexecdata[dmi_req_i.addr[3:0] - int'(dm::Data0)];
+            if (autoexecdata_idx < $bits(abstractauto_q.autoexecdata)) begin
+              cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
+            end
           end
         end
         dm::DMControl: begin
@@ -418,9 +424,8 @@ module dm_csrs #(
             // check whether we need to re-execute the command (just give a cmd_valid)
             // this should probably throw an error if executed during another command
             // was busy
-            // TODO(zarubaf): check if offset is correct - without it this may
-            // assign Xes
-            cmd_valid_d = abstractauto_q.autoexecprogbuf[dmi_req_i.addr[3:0]+16];
+            // range of autoexecprogbuf is 31:16
+            cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
           end
         end
         dm::SBCS: begin
@@ -518,13 +523,13 @@ module dm_csrs #(
     // static values for dcsr
     sbcs_d.sbversion            = 3'b1;
     sbcs_d.sbbusy               = sbbusy_i;
-    sbcs_d.sbasize              = BusWidth;
+    sbcs_d.sbasize              = $bits(sbcs_d.sbasize)'(BusWidth);
     sbcs_d.sbaccess128          = 1'b0;
     sbcs_d.sbaccess64           = logic'(BusWidth == 32'd64);
     sbcs_d.sbaccess32           = logic'(BusWidth == 32'd32);
     sbcs_d.sbaccess16           = 1'b0;
     sbcs_d.sbaccess8            = 1'b0;
-    sbcs_d.sbaccess             = (BusWidth == 32'd64) ? 2'd3 : 2'd2;
+    sbcs_d.sbaccess             = (BusWidth == 32'd64) ? 3'd3 : 3'd2;
   end
 
   // output multiplexer
@@ -533,7 +538,7 @@ module dm_csrs #(
     // default assignment
     haltreq_o = '0;
     resumereq_o = '0;
-    if (selected_hart < NrHarts) begin
+    if (selected_hart < HartSelLen'(NrHarts)) begin
       haltreq_o[selected_hart]   = dmcontrol_q.haltreq;
       resumereq_o[selected_hart] = dmcontrol_q.resumereq;
     end

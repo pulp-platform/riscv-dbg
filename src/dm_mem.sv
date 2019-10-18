@@ -268,7 +268,7 @@ module dm_mem #(
           WhereToAddr: begin
             // variable jump to abstract cmd, program_buffer or resume
             if (resumereq_wdata_aligned[wdata_hartsel]) begin
-              rdata_d = {32'b0, dm::jal('0, dm::ResumeAddress[11:0]-WhereToAddr)};
+              rdata_d = {32'b0, dm::jal('0, 21'(dm::ResumeAddress[11:0])-21'(WhereToAddr))};
             end
 
             // there is a command active so jump there
@@ -277,10 +277,10 @@ module dm_mem #(
               // keep this statement narrow to not catch invalid commands
               if (cmd_i.cmdtype == dm::AccessRegister &&
                   !ac_ar.transfer && ac_ar.postexec) begin
-                rdata_d = {32'b0, dm::jal('0, ProgBufBaseAddr-WhereToAddr)};
+                rdata_d = {32'b0, dm::jal('0, 21'(ProgBufBaseAddr)-21'(WhereToAddr))};
               // this is a legit abstract cmd -> execute it
               end else begin
-                rdata_d = {32'b0, dm::jal('0, AbstractCmdBaseAddr-WhereToAddr)};
+                rdata_d = {32'b0, dm::jal('0, 21'(AbstractCmdBaseAddr)-21'(WhereToAddr))};
               end
             end
           end
@@ -288,7 +288,7 @@ module dm_mem #(
           [DataBaseAddr:DataEndAddr]: begin
             rdata_d = {
                       data_i[$clog2(dm::ProgBufSize)'(addr_i[DbgAddressBits-1:3] -
-                          DataBaseAddr[DbgAddressBits-1:3] + 1)],
+                          DataBaseAddr[DbgAddressBits-1:3] + 1'b1)],
                       data_i[$clog2(dm::ProgBufSize)'(addr_i[DbgAddressBits-1:3] -
                           DataBaseAddr[DbgAddressBits-1:3])]
                       };
@@ -310,7 +310,7 @@ module dm_mem #(
             // release the corresponding hart
             if (({addr_i[DbgAddressBits-1:3], 3'b0} - FlagsBaseAddr[DbgAddressBits-1:0]) ==
               (DbgAddressBits'(hartsel) & {{(DbgAddressBits-3){1'b1}}, 3'b0})) begin
-              rdata[DbgAddressBits'(hartsel) & 3'b111] = {6'b0, resume, go};
+              rdata[DbgAddressBits'(hartsel) & DbgAddressBits'(3'b111)] = {6'b0, resume, go};
             end
             rdata_d = rdata;
           end
@@ -346,7 +346,7 @@ module dm_mem #(
       // Access Register
       // --------------------
       dm::AccessRegister: begin
-        if (ac_ar.aarsize < MaxAar && ac_ar.transfer && ac_ar.write) begin
+        if (32'(ac_ar.aarsize) < MaxAar && ac_ar.transfer && ac_ar.write) begin
           // store a0 in dscratch1
           abstract_cmd[0][31:0] = dm::csrw(dm::CSR_DSCRATCH1, 5'd10);
           // this range is reserved
@@ -387,7 +387,7 @@ module dm_mem #(
             // restore s0 again from dscratch
             abstract_cmd[3][63:32] = dm::csrr(dm::CSR_DSCRATCH0, 5'd8);
           end
-        end else if (ac_ar.aarsize < MaxAar && ac_ar.transfer && !ac_ar.write) begin
+        end else if (32'(ac_ar.aarsize) < MaxAar && ac_ar.transfer && !ac_ar.write) begin
           // store a0 in dscratch1
           abstract_cmd[0][31:0]  = dm::csrw(dm::CSR_DSCRATCH1, 5'd10);
           // this range is reserved
@@ -428,7 +428,7 @@ module dm_mem #(
             // restore s0 again from dscratch
             abstract_cmd[3][63:32] = dm::csrr(dm::CSR_DSCRATCH0, 5'd8);
           end
-        end else if (ac_ar.aarsize >= MaxAar || ac_ar.aarpostincrement == 1'b1) begin
+        end else if (32'(ac_ar.aarsize) >= MaxAar || ac_ar.aarpostincrement == 1'b1) begin
           // this should happend when e.g. ac_ar.aarsize >= MaxAar
           // Openocd will try to do an access with aarsize=64 bits
           // first before falling back to 32 bits.

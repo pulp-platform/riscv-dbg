@@ -21,7 +21,7 @@ module debug_rom (
   output logic [63:0]  rdata_o
 );
 
-  localparam int RomSize = 19;
+  localparam int unsigned RomSize = 19;
 
   const logic [RomSize-1:0][63:0] mem = {
     64'h00000000_7b200073,
@@ -57,7 +57,7 @@ module debug_rom (
   // the speculative fetch stage of the core
   always_comb begin : p_outmux
     rdata_o = '0;
-    if (addr_q < RomSize) begin
+    if (addr_q < $clog2(RomSize)'(RomSize)) begin
         rdata_o = mem[addr_q];
     end
   end

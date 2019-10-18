@@ -48,7 +48,7 @@ module $filename (
   output logic [63:0]  rdata_o
 );
 
-  localparam int RomSize = $size;
+  localparam int unsigned RomSize = $size;
 
   const logic [RomSize-1:0][63:0] mem = {
 $content
@@ -66,7 +66,7 @@ $content
   // the speculative fetch stage of the core
   always_comb begin : p_outmux
     rdata_o = '0;
-    if (addr_q < RomSize) begin
+    if (addr_q < $clog2(RomSize)'(RomSize)) begin
         rdata_o = mem[addr_q];
     end
   end
