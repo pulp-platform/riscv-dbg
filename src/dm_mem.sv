@@ -180,17 +180,22 @@ module dm_mem #(
     end
   end
 
+  // word mux for 32bit and 64bit buses
+  logic [63:0] word_mux;
+  assign word_mux = (fwd_rom_q) ? rom_rdata : rdata_q;
+
+  if (BusWidth == 64) begin : gen_word_mux64
+    assign rdata_o = word_mux;
+  end else begin : gen_word_mux32
+    assign rdata_o = (word_enable32_q) ? word_mux[32 +: 32] : word_mux[0 +: 32];
+  end
+
   // read/write logic
   always_comb begin : p_rw_logic
     automatic logic [63:0] data_bits;
 
     halted_d     = halted_q;
     resuming_d   = resuming_q;
-    rdata_o      = (BusWidth == 64) ?
-                      (fwd_rom_q ? rom_rdata : rdata_q) :
-                      (word_enable32_q ?
-                          (fwd_rom_q ? rom_rdata[63:32] : rdata_q[63:32]) :
-                          (fwd_rom_q ? rom_rdata[31: 0] : rdata_q[31: 0]));
     rdata_d      = rdata_q;
     // convert the data in bits representation
     data_bits    = data_i;
@@ -438,8 +443,7 @@ module dm_mem #(
 
   // ROM starts at the HaltAddress of the core e.g.: it immediately jumps to
   // the ROM base address
-  assign fwd_rom_d = (addr_i[DbgAddressBits-1:0] >= dm::HaltAddress[DbgAddressBits-1:0]) ?
-                     1'b1 : 1'b0;
+  assign fwd_rom_d = logic'(addr_i[DbgAddressBits-1:0] >= dm::HaltAddress[DbgAddressBits-1:0]);
 
   always_ff @(posedge clk_i or negedge rst_ni) begin : p_regs
     if (!rst_ni) begin
@@ -455,15 +459,13 @@ module dm_mem #(
     end
   end
 
-  for (genvar k = 0; k < NrHarts; k++) begin : gen_halted
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) begin
-        halted_q[k]   <= 1'b0;
-        resuming_q[k] <= 1'b0;
-      end else begin
-        halted_q[k]   <= SelectableHarts[k] ? halted_d[k]   : 1'b0;
-        resuming_q[k] <= SelectableHarts[k] ? resuming_d[k] : 1'b0;
-      end
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      halted_q   <= 1'b0;
+      resuming_q <= 1'b0;
+    end else begin
+      halted_q   <= SelectableHarts & halted_d;
+      resuming_q <= SelectableHarts & resuming_d;
     end
   end
 

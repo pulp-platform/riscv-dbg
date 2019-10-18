@@ -61,7 +61,7 @@ module dm_sba #(
   logic                  we;
   logic [BusWidth/8-1:0] be;
 
-  assign sbbusy_o = (state_q != Idle) ? 1'b1 : 1'b0;
+  assign sbbusy_o = logic'(state_q != Idle);
 
   always_comb begin : p_fsm
     req     = 1'b0;

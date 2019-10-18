@@ -101,9 +101,9 @@ module dm_top #(
     .BusWidth(BusWidth),
     .SelectableHarts(SelectableHarts)
   ) i_dm_csrs (
-    .clk_i                   ( clk_i                 ),
-    .rst_ni                  ( rst_ni                ),
-    .testmode_i              ( testmode_i            ),
+    .clk_i,
+    .rst_ni,
+    .testmode_i,
     .dmi_rst_ni,
     .dmi_req_valid_i,
     .dmi_req_ready_o,
@@ -111,10 +111,10 @@ module dm_top #(
     .dmi_resp_valid_o,
     .dmi_resp_ready_i,
     .dmi_resp_o,
-    .ndmreset_o              ( ndmreset_o            ),
-    .dmactive_o              ( dmactive_o            ),
+    .ndmreset_o,
+    .dmactive_o,
     .hartsel_o               ( hartsel               ),
-    .hartinfo_i              ( hartinfo_i            ),
+    .hartinfo_i,
     .halted_i                ( halted                ),
     .unavailable_i,
     .resumeack_i             ( resumeack             ),
@@ -150,18 +150,18 @@ module dm_top #(
   dm_sba #(
     .BusWidth(BusWidth)
   ) i_dm_sba (
-    .clk_i                   ( clk_i                 ),
-    .rst_ni                  ( rst_ni                ),
+    .clk_i,
+    .rst_ni,
     .dmactive_i              ( dmactive_o            ),
 
-    .master_req_o            ( master_req_o          ),
-    .master_add_o            ( master_add_o          ),
-    .master_we_o             ( master_we_o           ),
-    .master_wdata_o          ( master_wdata_o        ),
-    .master_be_o             ( master_be_o           ),
-    .master_gnt_i            ( master_gnt_i          ),
-    .master_r_valid_i        ( master_r_valid_i      ),
-    .master_r_rdata_i        ( master_r_rdata_i      ),
+    .master_req_o,
+    .master_add_o,
+    .master_we_o,
+    .master_wdata_o,
+    .master_be_o,
+    .master_gnt_i,
+    .master_r_valid_i,
+    .master_r_rdata_i,
 
     .sbaddress_i             ( sbaddress_csrs_sba    ),
     .sbaddress_o             ( sbaddress_sba_csrs    ),
@@ -185,9 +185,9 @@ module dm_top #(
     .BusWidth(BusWidth),
     .SelectableHarts(SelectableHarts)
   ) i_dm_mem (
-    .clk_i                   ( clk_i                 ),
-    .rst_ni                  ( rst_ni                ),
-    .debug_req_o             ( debug_req_o           ),
+    .clk_i,
+    .rst_ni,
+    .debug_req_o,
     .hartsel_i               ( hartsel               ),
     .haltreq_i               ( haltreq               ),
     .resumereq_i             ( resumereq             ),

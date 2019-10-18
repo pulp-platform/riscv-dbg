@@ -194,8 +194,8 @@ module dm_csrs #(
 
     // as soon as we are out of the legal Hart region tell the debugger
     // that there are only non-existent harts
-    dmstatus.allnonexistent = (hartsel_o > (NrHarts - 1)) ? 1'b1 : 1'b0;
-    dmstatus.anynonexistent = (hartsel_o > (NrHarts - 1)) ? 1'b1 : 1'b0;
+    dmstatus.allnonexistent = logic'(hartsel_o > (NrHarts - 1));
+    dmstatus.anynonexistent = logic'(hartsel_o > (NrHarts - 1));
 
     // We are not allowed to be in multiple states at once. This is a to
     // make the running/halted and unavailable states exclusive.
@@ -534,7 +534,9 @@ module dm_csrs #(
       sbcs_q         <= '0;
       sbaddr_q       <= '0;
       sbdata_q       <= '0;
+      havereset_q    <= '1;
     end else begin
+      havereset_q    <= SelectableHarts & havereset_d;
       // synchronous re-set of debug module, active-low, except for dmactive
       if (!dmcontrol_q.dmactive) begin
         dmcontrol_q.haltreq          <= '0;
@@ -570,17 +572,6 @@ module dm_csrs #(
         sbcs_q                       <= sbcs_d;
         sbaddr_q                     <= sbaddr_d;
         sbdata_q                     <= sbdata_d;
-      end
-    end
-  end
-
-
-  for (genvar k = 0; k < NrHarts; k++) begin : gen_havereset
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) begin
-        havereset_q[k] <= 1'b1;
-      end else begin
-        havereset_q[k] <= SelectableHarts[k] ? havereset_d[k] : 1'b0;
       end
     end
   end
