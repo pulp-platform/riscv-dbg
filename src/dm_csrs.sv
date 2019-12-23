@@ -91,8 +91,8 @@ module dm_csrs #(
   logic        resp_queue_pop;
   logic [31:0] resp_queue_data;
 
-  localparam dm::dm_csr_e DataEnd = dm::dm_csr_e'(dm::Data0 + {4'b0, dm::DataCount} - 1);
-  localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'(dm::ProgBuf0 + {4'b0, dm::ProgBufSize} - 1);
+  localparam dm::dm_csr_e DataEnd = dm::dm_csr_e'(dm::Data0 + {4'b0, dm::DataCount} - 8'h01);
+  localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'(dm::ProgBuf0 + {4'b0, dm::ProgBufSize} - 8'h01);
 
   logic [31:0] haltsum0, haltsum1, haltsum2, haltsum3;
   logic [((NrHarts-1)/2**5 + 1) * 32 - 1 : 0] halted;
