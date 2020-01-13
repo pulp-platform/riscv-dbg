@@ -137,10 +137,10 @@ module dm_mem #(
     resume           = 1'b0;
     cmdbusy_o        = 1'b1;
 
-    case (state_q)
+    unique case (state_q)
       Idle: begin
         cmdbusy_o = 1'b0;
-        if (cmd_valid_i && halted_q_aligned[hartsel]) begin
+        if (cmd_valid_i && halted_q_aligned[hartsel] && !unsupported_command) begin
           // give the go signal
           state_d = Go;
         end else if (cmd_valid_i) begin
@@ -182,6 +182,8 @@ module dm_mem #(
           state_d = Idle;
         end
       end
+
+      default: ;
     endcase
 
     // only signal once that cmd is unsupported so that we can clear cmderr
