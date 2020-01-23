@@ -5,7 +5,25 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.3.0] - 2019-23-01
+
+### Added
+- Documentation in `doc/` from [@imphil](https://github.com/imphil)
+
+### Changed
+- Various linting issues and cleanups from [@msfschaffner](https://github.com/msfschaffner)
+
+### Fixed
+- Corruption on debug exception entry [@tomroberts-lowrisc](https://github.com/tomroberts-lowrisc)
+- truncation of `selected_hart`
+
+## [0.2.0] - 2019-08-16
+
+## Added
 - Add Bender.yml
+
+### Fixed
 - Fix haltsum1, haltsum2 and haltsum3
 - Fix minor linter issues
 
