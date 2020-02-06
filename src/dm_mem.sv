@@ -56,6 +56,7 @@ module dm_mem #(
   input  logic [BusWidth/8-1:0]            be_i,
   output logic [BusWidth-1:0]              rdata_o
 );
+<<<<<<< HEAD
   localparam int unsigned DbgAddressBits = 12;
   localparam int unsigned HartSelLen     = (NrHarts == 1) ? 1 : $clog2(NrHarts);
   localparam int unsigned NrHartsAligned = 2**HartSelLen;
@@ -147,16 +148,98 @@ module dm_mem #(
         if (cmd_valid_i && halted_q_aligned[hartsel] && !unsupported_command) begin
           // give the go signal
           state_d = Go;
+=======
+
+    localparam int HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
+    localparam int MaxAar = (BusWidth == 64) ? 4 : 3;
+    localparam DbgAddressBits = 12;
+    localparam logic [DbgAddressBits-1:0] DataBase = (dm::DataAddr);
+    localparam logic [DbgAddressBits-1:0] DataEnd = (dm::DataAddr + 4*dm::DataCount);
+    localparam logic [DbgAddressBits-1:0] ProgBufBase = (dm::DataAddr - 4*dm::ProgBufSize);
+    localparam logic [DbgAddressBits-1:0] ProgBufEnd = (dm::DataAddr - 1);
+    localparam logic [DbgAddressBits-1:0] AbstractCmdBase = (ProgBufBase - 4*10);
+    localparam logic [DbgAddressBits-1:0] AbstractCmdEnd = (ProgBufBase - 1);
+    localparam logic [DbgAddressBits-1:0] WhereTo   = 'h300;
+    localparam logic [DbgAddressBits-1:0] FlagsBase = 'h400;
+    localparam logic [DbgAddressBits-1:0] FlagsEnd  = 'h7FF;
+
+
+    localparam logic [DbgAddressBits-1:0] Halted    = 'h100;
+    localparam logic [DbgAddressBits-1:0] Going     = 'h104;
+    localparam logic [DbgAddressBits-1:0] Resuming  = 'h108;
+    localparam logic [DbgAddressBits-1:0] Exception = 'h10C;
+
+    logic [dm::ProgBufSize/2-1:0][63:0]   progbuf;
+    logic [4:0][63:0]   abstract_cmd;
+    logic [NrHarts-1:0] halted_d, halted_q;
+    logic [NrHarts-1:0] resuming_d, resuming_q;
+    logic               resume, go, going;
+    logic [NrHarts-1:0] halted;
+
+    logic [HartSelLen-1:0] hart_sel;
+    logic exception;
+    logic unsupported_command;
+
+    logic [63:0] rom_rdata;
+    logic [63:0] rdata_d, rdata_q;
+    logic        word_enable32_q;
+
+    // distinguish whether we need to forward data from the ROM or the FSM
+    // latch the address for this
+    logic fwd_rom_d, fwd_rom_q;
+    dm::ac_ar_cmd_t ac_ar;
+
+    // Abstract Command Access Register
+    assign ac_ar       = dm::ac_ar_cmd_t'(cmd_i.control);
+    assign hart_sel    = wdata_i[HartSelLen-1:0];
+    assign debug_req_o = haltreq_i;
+    assign halted_o    = halted_q;
+    assign resuming_o  = resuming_q;
+
+    // reshape progbuf
+    assign progbuf = progbuf_i;
+
+    typedef enum logic [1:0] { Idle, Go, Resume, CmdExecuting } state_e;
+    state_e state_d, state_q;
+
+    // hart ctrl queue
+    always_comb begin
+        `ifdef _VCP // SPT77445
+		automatic  bit modified_state_d;
+		`else
+        cmderror_valid_o = 1'b0;
+        cmderror_o       = dm::CmdErrNone;
+        state_d          = state_q;
+        go               = 1'b0;
+        resume           = 1'b0;
+        cmdbusy_o        = 1'b1;
+		`endif
+
+        case (state_q)
+            Idle: begin
+                cmdbusy_o = 1'b0;
+                if (cmd_valid_i && halted_q[hartsel_i]) begin
+                    // give the go signal
+                    state_d = Go;
+>>>>>>> WA added
 					`ifdef _VCP // SPT77445
 					modified_state_d=1;
 					cmderror_valid_o = 1'b0;
 					cmderror_o       = dm::CmdErrNone;
 					`endif
+<<<<<<< HEAD
         end else if (cmd_valid_i) begin
           // hart must be halted for all requests
           cmderror_valid_o = 1'b1;
           cmderror_o = dm::CmdErrorHaltResume;
         end
+=======
+                end else if (cmd_valid_i) begin
+                    // hart must be halted for all requests
+                    cmderror_valid_o = 1'b1;
+                    cmderror_o = dm::CmdErrorHaltResume;
+                end
+>>>>>>> WA added
 				`ifdef _VCP // SPT77445
 				else
 				begin
@@ -164,6 +247,7 @@ module dm_mem #(
 					cmderror_o       = dm::CmdErrNone;
 				end
 				`endif
+<<<<<<< HEAD
         // CSRs want to resume, the request is ignored when the hart is
         // requested to halt or it didn't clear the resuming_q bit before
         if (resumereq_aligned[hartsel] && !resuming_q_aligned[hartsel] &&
@@ -173,11 +257,23 @@ module dm_mem #(
 					modified_state_d=1;
 					`endif
         end
+=======
+                // CSRs want to resume, the request is ignored when the hart is
+                // requested to halt or it didn't clear the resuming_q bit before
+                if (resumereq_i[hartsel_i] && !resuming_q[hartsel_i] &&
+                     !haltreq_i[hartsel_i] &&    halted_q[hartsel_i]) begin
+                    state_d = Resume;
+					`ifdef _VCP // SPT77445
+					modified_state_d=1;
+					`endif
+                end
+>>>>>>> WA added
 				
 				`ifdef _VCP // SPT77445
 				go = 1'b0;
 				resume           = 1'b0;
 				`endif
+<<<<<<< HEAD
       end
 
       Go: begin
@@ -188,12 +284,24 @@ module dm_mem #(
         if (going) begin
             state_d = CmdExecuting;
         end
+=======
+            end
+
+            Go: begin
+                // we are already busy here since we scheduled the execution of a program
+                cmdbusy_o = 1'b1;
+                go        = 1'b1;
+                // the thread is now executing the command, track its state
+                if (going)
+                    state_d = CmdExecuting;
+>>>>>>> WA added
 				`ifdef _VCP // SPT77445
 					modified_state_d=1;
 					cmderror_valid_o = 1'b0;
 					cmderror_o       = dm::CmdErrNone;
 					resume           = 1'b0;
 				`endif
+<<<<<<< HEAD
       end
 
       Resume: begin
@@ -205,6 +313,19 @@ module dm_mem #(
           state_d = Idle;
 						modified_state_d=1; 
         end
+=======
+            end
+
+            Resume: begin
+                cmdbusy_o = 1'b1;
+                resume = 1'b1;
+                if (resuming_o[hartsel_i])
+				`ifdef _VCP // SPT77445
+					begin 
+                    state_d = Idle;
+						modified_state_d=1; 
+					end
+>>>>>>> WA added
 				`else
                     state_d = Idle;
 				`endif
@@ -213,6 +334,7 @@ module dm_mem #(
 				cmderror_valid_o = 1'b0;
 				cmderror_o       = dm::CmdErrNone;
 				`endif
+<<<<<<< HEAD
       end
 
       CmdExecuting: begin
@@ -225,12 +347,30 @@ module dm_mem #(
 						modified_state_d=1; 
 					`endif
         end
+=======
+            end
+
+            CmdExecuting: begin
+                cmdbusy_o = 1'b1;
+                go        = 1'b0;
+                // wait until the hart has halted again
+                if (halted[hartsel_i]) begin
+                    state_d = Idle;
+					`ifdef _VCP // SPT77445
+						modified_state_d=1; 
+					`endif
+                end
+>>>>>>> WA added
 				`ifdef _VCP // SPT77445
 					cmderror_valid_o = 1'b0;
 					cmderror_o       = dm::CmdErrNone;
 					resume           = 1'b0;
 				`endif
+<<<<<<< HEAD
       end
+=======
+            end
+>>>>>>> WA added
 			`ifdef _VCP // SPT77445
 			default: begin
 				cmdbusy_o = 1'b1;
@@ -242,16 +382,35 @@ module dm_mem #(
 			`else
       default: ;
 			`endif
+<<<<<<< HEAD
     endcase
+=======
+        endcase
+>>>>>>> WA added
 `ifdef _VCP // SPT77445
 if (!modified_state_d==1)
 	state_d          = state_q; 
 `endif
+<<<<<<< HEAD
     // only signal once that cmd is unsupported so that we can clear cmderr
     // in subsequent writes to abstractcs
     if (unsupported_command && cmd_valid_i) begin
       cmderror_valid_o = 1'b1;
       cmderror_o = dm::CmdErrNotSupported;
+=======
+        // only signal once that cmd is unsupported so that we can clear cmderr
+        // in subsequent writes to abstractcs
+        if (unsupported_command && cmd_valid_i) begin
+            cmderror_valid_o = 1'b1;
+            cmderror_o = dm::CmdErrNotSupported;
+        end
+
+        if (exception) begin
+            cmderror_valid_o = 1'b1;
+            cmderror_o = dm::CmdErrorException;
+        end
+
+>>>>>>> WA added
     end
 
     if (exception) begin
