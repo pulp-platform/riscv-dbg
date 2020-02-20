@@ -111,7 +111,7 @@ module dm_csrs #(
     hartsel_idx0        = hartsel_o[19:5];
     halted[NrHarts-1:0] = halted_i;
     halted_reshaped0    = halted;
-    if (hartsel_idx0 < 15'((NrHarts-1)/2**5)) begin
+    if (hartsel_idx0 < 15'((NrHarts-1)/2**5+1)) begin
       haltsum0 = halted_reshaped0[hartsel_idx0];
     end
   end
