@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.3.0] - 2019-23-01
+## [0.3.0] - 2020-01-23
 
 ### Added
 - Documentation in `doc/` from [@imphil](https://github.com/imphil)
