@@ -123,7 +123,7 @@ module dm_csrs #(
     haltsum1     = '0;
     hartsel_idx1 = hartsel_o[19:10];
 
-    for (int unsigned k = 0; k < NrHarts/2**5+1; k++) begin
+    for (int unsigned k = 0; k < NrHarts/2**5; k++) begin
       halted_flat1[k] = |halted_reshaped0[k];
     end
     halted_reshaped1 = halted_flat1;
