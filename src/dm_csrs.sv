@@ -48,8 +48,8 @@ module dm_csrs #(
 
   output logic                              cmd_valid_o,       // debugger writing to cmd field
   output dm::command_t                      cmd_o,             // abstract command
-  input  logic                              cmderror_valid_i,  // an error occured
-  input  dm::cmderr_e                       cmderror_i,        // this error occured
+  input  logic                              cmderror_valid_i,  // an error occurred
+  input  dm::cmderr_e                       cmderror_i,        // this error occurred
   input  logic                              cmdbusy_i,         // cmd is currently busy executing
 
   output logic [dm::ProgBufSize-1:0][31:0]  progbuf_o, // to system bus
