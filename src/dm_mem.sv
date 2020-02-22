@@ -62,7 +62,7 @@ module dm_mem #(
   localparam int unsigned MaxAar         = (BusWidth == 64) ? 4 : 3;
 
   localparam logic [DbgAddressBits-1:0] DataBaseAddr        = (dm::DataAddr);
-  localparam logic [DbgAddressBits-1:0] DataEndAddr         = (dm::DataAddr + 4*dm::DataCount);
+  localparam logic [DbgAddressBits-1:0] DataEndAddr         = (dm::DataAddr + 4*dm::DataCount - 1);
   localparam logic [DbgAddressBits-1:0] ProgBufBaseAddr     = (dm::DataAddr - 4*dm::ProgBufSize);
   localparam logic [DbgAddressBits-1:0] ProgBufEndAddr      = (dm::DataAddr - 1);
   localparam logic [DbgAddressBits-1:0] AbstractCmdBaseAddr = (ProgBufBaseAddr - 4*10);
