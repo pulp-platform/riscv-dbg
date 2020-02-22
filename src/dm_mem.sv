@@ -62,7 +62,7 @@ module dm_mem #(
   localparam int unsigned MaxAar         = (BusWidth == 64) ? 4 : 3;
 
   localparam logic [DbgAddressBits-1:0] DataBaseAddr        = (dm::DataAddr);
-  localparam logic [DbgAddressBits-1:0] DataEndAddr         = (dm::DataAddr + 4*dm::DataCount);
+  localparam logic [DbgAddressBits-1:0] DataEndAddr         = (dm::DataAddr + 4*dm::DataCount - 1);
   localparam logic [DbgAddressBits-1:0] ProgBufBaseAddr     = (dm::DataAddr - 4*dm::ProgBufSize);
   localparam logic [DbgAddressBits-1:0] ProgBufEndAddr      = (dm::DataAddr - 1);
   localparam logic [DbgAddressBits-1:0] AbstractCmdBaseAddr = (ProgBufBaseAddr - 4*10);
@@ -252,7 +252,7 @@ module dm_mem #(
           // an exception occurred during execution
           ExceptionAddr: exception = 1'b1;
           // core can write data registers
-          [(dm::DataAddr):DataEndAddr]: begin
+          [DataBaseAddr::DataEndAddr]: begin
             data_valid_o = 1'b1;
             for (int i = 0; i < $bits(be_i); i++) begin
               if (be_i[i]) begin
