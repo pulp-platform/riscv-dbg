@@ -252,7 +252,7 @@ module dm_mem #(
           // an exception occurred during execution
           ExceptionAddr: exception = 1'b1;
           // core can write data registers
-          [(dm::DataAddr):DataEndAddr]: begin
+          [DataBaseAddr::DataEndAddr]: begin
             data_valid_o = 1'b1;
             for (int i = 0; i < $bits(be_i); i++) begin
               if (be_i[i]) begin
