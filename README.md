@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/pulp-platform/riscv-dbg.svg?branch=master)](https://travis-ci.com/pulp-platform/riscv-dbg)
+
 # RISC-V Debug Support for PULP Cores
 
 This module is an implementation of a debug unit compliant with the [RISC-V
