@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- `tb` that runs dm in conjunction with ri5cy and OpenOCD
+- `.travis-ci.yml` running `tb` with verilator
+
+### Fixed
+- Off-by-one error in data and progbuf end address from [@pbing](https://github.com/pbing)
+
 ## [0.3.0] - 2020-01-23
 
 ### Added
