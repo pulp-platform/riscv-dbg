@@ -9,6 +9,8 @@ This document specifies the processor debug system. The debug system implements 
 - JTAG Debug Transport Module (DTM) according to the RISC-V Debug Specification.
 - System Bus Access with generic 32 or 64 bit bus interface.
 - Support for up to 2^20 harts through one Debug Module
+- Support for arbitrary memory location of DM
+- Support for one debug scratch register if the DM is located at the zero page.
 
 ## Description
 
@@ -205,11 +207,11 @@ unavailable_i[NrHarts-1] | input         | Set to 0 to mark the hart has unavail
 Four debug-specific CSRs must be supported by the core, as described in the Debug Specification Section 4.8.
 
 **Address** | **Name**  | **Access**                    | **Description**
------------ | --------- | ----------------------------- | ------------------------
+----------- | --------- | ----------------------------- | ----------------------------------------------------------------------------
 0x7b0       | dcsr      | _field-dependent; check spec_ | Debug Control and Status
 0x7b1       | dpc       | RW from Debug Mode only       | Debug PC
 0x7b2       | dscratch0 | RW from Debug Mode only       | Debug Scratch Register 0
-0x7b3       | dscratch1 | RW from Debug Mode only       | Debug Scratch Register 1
+0x7b3       | dscratch1 | RW from Debug Mode only       | Debug Scratch Register 1 (only required if DM is not located at address 0x0)
 
 #### DRET Instruction
 
