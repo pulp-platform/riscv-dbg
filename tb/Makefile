@@ -133,9 +133,13 @@ RAM_START_ADDR          = 0x1c000000
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
 
-# riscv toolchain install path
-RISCV                    ?= ~/.riscv
-RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
+# riscv bare metal cross compiling
+RISCV			?= $(HOME)/.riscv
+RV_CC			= $(RISCV)/bin/riscv32-unknown-elf-gcc
+RV_CFLAGS		= -march=rv32imc -Os -g
+RV_LDFLAGS		= -nostdlib -static -T prog/link.ld
+RV_LDLIBS		= -lc -lm -lgcc
+RV_OBJCOPY		= $(RISCV)/bin/riscv32-unknown-elf-objcopy
 
 # assume verilator if no target chosen
 .DEFAULT_GOAL := veri-run
@@ -275,20 +279,11 @@ vsim-clean:
 	.build-rtl .opt-rtl .lib-rtl *.vcd objdump
 
 # compile and dump program
-prog/test.elf: prog/test.c prog/syscalls.c prog/start.S prog/vectors.S
-	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
-		-T prog/link.ld  \
-		-static \
-		prog/crt0.S \
-		prog/test.c prog/syscalls.c prog/vectors.S \
-		-I $(RISCV)/riscv32-unknown-elf/include \
-		-L $(RISCV)/riscv32-unknown-elf/lib \
-		-lc -lm -lgcc
-
-	chmod u+x prog/test.elf
+prog/test.elf: prog/test.c prog/crt0.S prog/syscalls.c prog/vectors.S
+	$(RV_CC) $(RV_CFLAGS) $(RV_CPPFLAGS) $(RV_LDFLAGS) $^ $(RV_LDLIBS) -o $@
 
 prog/test.hex: prog/test.elf
-	$(RISCV_EXE_PREFIX)objcopy -O verilog --change-addresses -$(RAM_START_ADDR) $< $@
+	$(RV_OBJCOPY) -O verilog --change-addresses -$(RAM_START_ADDR) $< $@
 
 .PHONY: prog-clean
 prog-clean:
