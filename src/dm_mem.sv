@@ -467,21 +467,21 @@ module dm_mem #(
   // Depending on whether the debug module is located
   // at the zero page we can instantiate a simplified version
   // which only requires one scratch register per hart.
-  // It uses the zero register (`x0`) as the base
-  // for its loads. The zero register does not need to
-  // be saved.
-  if (!HasSndScratch) begin : gen_rom_one_scratch
+  // For all other cases we need to set aside
+  // two registers per hart, hence we also need
+  // two scratch registers.
+  if (HasSndScratch) begin : gen_rom_snd_scratch
     debug_rom i_debug_rom (
       .clk_i,
       .req_i,
       .addr_i  ( rom_addr  ),
       .rdata_o ( rom_rdata )
     );
-  end else begin : gen_rom_snd_scratch
-    // for all other cases we need to set aside
-    // two registers per hart, hence we also need
-    // two scratch registers.
-    debug_rom_snd_scratch i_debug_rom (
+  end else begin : gen_rom_one_scratch
+    // It uses the zero register (`x0`) as the base
+    // for its loads. The zero register does not need to
+    // be saved.
+    debug_rom_one_scratch i_debug_rom (
       .clk_i,
       .req_i,
       .addr_i  ( rom_addr  ),
