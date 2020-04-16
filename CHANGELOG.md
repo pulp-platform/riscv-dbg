@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `tb` that runs dm in conjunction with ri5cy and OpenOCD
 - `.travis-ci.yml` running `tb` with verilator
 
+### Changed
+- Made second scratch register optional (default is two) from [@zarubaf](https://github.com/zarubaf
+
 ### Fixed
 - Off-by-one error in data and progbuf end address from [@pbing](https://github.com/pbing)
 
