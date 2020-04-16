@@ -20,6 +20,7 @@
 module dm_top #(
   parameter int unsigned        NrHarts          = 1,
   parameter int unsigned        BusWidth         = 32,
+  parameter int unsigned        DmBaseAddress    = 'h1000, // default to non-zero page
   // Bitmask to select physically available harts for systems
   // that don't use hart numbers in a contiguous fashion.
   parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}}
@@ -183,7 +184,8 @@ module dm_top #(
   dm_mem #(
     .NrHarts(NrHarts),
     .BusWidth(BusWidth),
-    .SelectableHarts(SelectableHarts)
+    .SelectableHarts(SelectableHarts),
+    .DmBaseAddress(DmBaseAddress)
   ) i_dm_mem (
     .clk_i,
     .rst_ni,
@@ -216,6 +218,11 @@ module dm_top #(
   initial begin
     assert (BusWidth == 32 || BusWidth == 64)
         else $fatal(1, "DM needs a bus width of either 32 or 64 bits");
+    // Fail if the DM is not located on the zero page and one hart doesn't have two scratch registers.
+    for (int i = 0; i < NrHarts; i++) begin
+      assert ((DmBaseAddress > 0 && hartinfo_i[i].nscratch >= 2) || (DmBaseAddress == 0 && hartinfo_i[i].nscratch >= 1))
+        else $fatal(1, "If the DM is not located at the zero page each hart needs at lest two scratch registers");
+    end
   end
 `endif
 
