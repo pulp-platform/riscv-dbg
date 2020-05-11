@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - Off-by-one error in data and progbuf end address from [@pbing](https://github.com/pbing)
+- Haltsum1-3 calculation
 
 ## [0.3.0] - 2020-01-23
 
