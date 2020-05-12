@@ -89,6 +89,22 @@ module dm_sba #(
 
       Read: begin
         req = 1'b1;
+        we  = 1'b0;
+        // generate byte enable mask
+        unique case (sbaccess_i)
+          3'b000: begin
+            be[be_idx] = '1;
+          end
+          3'b001: begin
+            be[int'({be_idx[$high(be_idx):1], 1'b0}) +: 2] = '1;
+          end
+          3'b010: begin
+            if (BusWidth == 32'd64) be[int'({be_idx[$high(be_idx)], 2'b0}) +: 4] = '1;
+            else                    be = '1;
+          end
+          3'b011: be = '1;
+          default: ;
+        endcase
         if (gnt) state_d = WaitRead;
       end
 
