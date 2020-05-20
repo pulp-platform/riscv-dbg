@@ -117,7 +117,7 @@ RTLSRC_DEBUG            := ../debug_rom/debug_rom.sv
 RTLSRC_DEBUG		+= $(addprefix ../src/,\
 				dm_csrs.sv dmi_cdc.sv dmi_jtag.sv \
 				dmi_jtag_tap.sv dm_mem.sv \
-				dm_sba.sv dm_top.sv)
+				dm_sba.sv dm_top.sv dm_obi_top.sv)
 
 RTLSRC			+= $(RTLSRC_RISCV) $(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
 
