@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- Optional wrapper `dm_obi_top.sv` that wraps `dm_top` providing an OBI compliant interface
 - `tb` that runs dm in conjunction with ri5cy and OpenOCD
 - `.travis-ci.yml` running `tb` with verilator
 
