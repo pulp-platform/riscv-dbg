@@ -6,6 +6,7 @@ riscv-dbg:
         src/dm_csrs.sv,
         src/dm_mem.sv,
         src/dm_top.sv,
+        src/dm_obi_top.sv,
         src/dmi_cdc.sv,
         src/dmi_jtag.sv,
         src/dmi_jtag_tap.sv,
