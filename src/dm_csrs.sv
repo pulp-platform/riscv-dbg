@@ -97,11 +97,11 @@ module dm_csrs #(
   logic [31:0] haltsum0, haltsum1, haltsum2, haltsum3;
   logic [((NrHarts-1)/2**5 + 1) * 32 - 1 : 0] halted;
   logic [(NrHarts-1)/2**5:0][31:0] halted_reshaped0;
-  logic [NrHarts/2**10:0][31:0] halted_reshaped1;
-  logic [NrHarts/2**15:0][31:0] halted_reshaped2;
-  logic [(NrHarts/2**10+1)*32-1:0] halted_flat1;
-  logic [(NrHarts/2**15+1)*32-1:0] halted_flat2;
-  logic [32-1:0] halted_flat3;
+  logic [(NrHarts-1)/2**10:0][31:0] halted_reshaped1;
+  logic [(NrHarts-1)/2**15:0][31:0] halted_reshaped2;
+  logic [((NrHarts-1)/2**10+1)*32-1:0] halted_flat1;
+  logic [((NrHarts-1)/2**15+1)*32-1:0] halted_flat2;
+  logic [31:0] halted_flat3;
 
   // haltsum0
   logic [14:0] hartsel_idx0;
@@ -123,12 +123,12 @@ module dm_csrs #(
     haltsum1     = '0;
     hartsel_idx1 = hartsel_o[19:10];
 
-    for (int unsigned k = 0; k < NrHarts/2**5+1; k++) begin
+    for (int unsigned k = 0; k < (NrHarts-1)/2**5+1; k++) begin
       halted_flat1[k] = |halted_reshaped0[k];
     end
     halted_reshaped1 = halted_flat1;
 
-    if (hartsel_idx1 < 10'((NrHarts/2**10+1))) begin
+    if (hartsel_idx1 < 10'(((NrHarts-1)/2**10+1))) begin
       haltsum1 = halted_reshaped1[hartsel_idx1];
     end
   end
@@ -140,12 +140,12 @@ module dm_csrs #(
     haltsum2     = '0;
     hartsel_idx2 = hartsel_o[19:15];
 
-    for (int unsigned k = 0; k < NrHarts/2**10+1; k++) begin
+    for (int unsigned k = 0; k < (NrHarts-1)/2**10+1; k++) begin
       halted_flat2[k] = |halted_reshaped1[k];
     end
     halted_reshaped2 = halted_flat2;
 
-    if (hartsel_idx2 < 5'((NrHarts/2**15+1))) begin
+    if (hartsel_idx2 < 5'(((NrHarts-1)/2**15+1))) begin
       haltsum2         = halted_reshaped2[hartsel_idx2];
     end
   end
