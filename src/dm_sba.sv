@@ -60,9 +60,28 @@ module dm_sba #(
   logic                          gnt;
   logic                          we;
   logic [BusWidth/8-1:0]         be;
+  logic [BusWidth/8-1:0]         be_mask;
   logic [$clog2(BusWidth/8)-1:0] be_idx;
 
   assign sbbusy_o = logic'(state_q != Idle);
+
+  always_comb begin : p_be_mask
+    // generate byte enable mask
+    unique case (sbaccess_i)
+      3'b000: begin
+        be_mask[be_idx] = '1;
+      end
+      3'b001: begin
+        be_mask[int'({be_idx[$high(be_idx):1], 1'b0}) +: 2] = '1;
+      end
+      3'b010: begin
+        if (BusWidth == 32'd64) be_mask[int'({be_idx[$high(be_idx)], 2'b0}) +: 4] = '1;
+        else                    be_mask = '1;
+      end
+      3'b011: be_mask = '1;
+      default: ;
+    endcase
+  end
 
   always_comb begin : p_fsm
     req     = 1'b0;
@@ -89,27 +108,14 @@ module dm_sba #(
 
       Read: begin
         req = 1'b1;
+        be = be_mask;
         if (gnt) state_d = WaitRead;
       end
 
       Write: begin
         req = 1'b1;
         we  = 1'b1;
-        // generate byte enable mask
-        unique case (sbaccess_i)
-          3'b000: begin
-            be[be_idx] = '1;
-          end
-          3'b001: begin
-            be[int'({be_idx[$high(be_idx):1], 1'b0}) +: 2] = '1;
-          end
-          3'b010: begin
-            if (BusWidth == 32'd64) be[int'({be_idx[$high(be_idx)], 2'b0}) +: 4] = '1;
-            else                    be = '1;
-          end
-          3'b011: be = '1;
-          default: ;
-        endcase
+        be = be_mask;
         if (gnt) state_d = WaitWrite;
       end
 
