@@ -580,6 +580,7 @@ module dm_csrs #(
       // this is the only write-able bit during reset
       cmderr_q       <= dm::CmdErrNone;
       command_q      <= '0;
+      cmd_valid_q    <= '0;
       abstractauto_q <= '0;
       progbuf_q      <= '0;
       data_q         <= '0;
