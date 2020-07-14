@@ -91,8 +91,8 @@ module dm_csrs #(
   logic        resp_queue_pop;
   logic [31:0] resp_queue_data;
 
-  localparam dm::dm_csr_e DataEnd = dm::dm_csr_e'(dm::Data0 + {4'b0, dm::DataCount} - 8'h01);
-  localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'(dm::ProgBuf0 + {4'b0, dm::ProgBufSize} - 8'h01);
+  localparam dm::dm_csr_e DataEnd = dm::dm_csr_e'(dm::Data0 + {4'b0, dm::DataCount} - 8'h1);
+  localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'(dm::ProgBuf0 + {4'b0, dm::ProgBufSize} - 8'h1);
 
   logic [31:0] haltsum0, haltsum1, haltsum2, haltsum3;
   logic [((NrHarts-1)/2**5 + 1) * 32 - 1 : 0] halted;
@@ -521,7 +521,7 @@ module dm_csrs #(
       dmcontrol_d.resumereq = 1'b0;
     end
     // static values for dcsr
-    sbcs_d.sbversion            = 3'b1;
+    sbcs_d.sbversion            = 3'd1;
     sbcs_d.sbbusy               = sbbusy_i;
     sbcs_d.sbasize              = $bits(sbcs_d.sbasize)'(BusWidth);
     sbcs_d.sbaccess128          = 1'b0;
