@@ -336,7 +336,8 @@ module dm_mem #(
     abstract_cmd[0][31:0]  = dm::illegal();
     // load debug module base address into a0, this is shared among all commands
     abstract_cmd[0][63:32] = HasSndScratch ? dm::auipc(5'd10, '0) : dm::nop();
-    abstract_cmd[1][31:0]  = HasSndScratch ? dm::srli(5'd10, 5'd10, 6'd12) : dm::nop(); // clr lowest 12b -> DM base offset
+    // clr lowest 12b -> DM base offset
+    abstract_cmd[1][31:0]  = HasSndScratch ? dm::srli(5'd10, 5'd10, 6'd12) : dm::nop();
     abstract_cmd[1][63:32] = HasSndScratch ? dm::slli(5'd10, 5'd10, 6'd12) : dm::nop();
     abstract_cmd[2][31:0]  = dm::nop();
     abstract_cmd[2][63:32] = dm::nop();
@@ -395,7 +396,9 @@ module dm_mem #(
           end
         end else if (32'(ac_ar.aarsize) < MaxAar && ac_ar.transfer && !ac_ar.write) begin
           // store a0 in dscratch1
-          abstract_cmd[0][31:0]  = HasSndScratch ? dm::csrw(dm::CSR_DSCRATCH1, LoadBaseAddr) : dm::nop();
+          abstract_cmd[0][31:0]  = HasSndScratch ?
+                                   dm::csrw(dm::CSR_DSCRATCH1, LoadBaseAddr) :
+                                   dm::nop();
           // this range is reserved
           if (ac_ar.regno[15:14] != '0) begin
               abstract_cmd[0][31:0] = dm::ebreak(); // we leave asap
