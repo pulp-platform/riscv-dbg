@@ -16,7 +16,8 @@
 *
 */
 module dm_sba #(
-  parameter int unsigned BusWidth = 32
+  parameter int unsigned BusWidth = 32,
+  parameter bit          ReadByteEnable = 1
 ) (
   input  logic                   clk_i,       // Clock
   input  logic                   rst_ni,
@@ -66,6 +67,8 @@ module dm_sba #(
   assign sbbusy_o = logic'(state_q != Idle);
 
   always_comb begin : p_be_mask
+    be_mask = '0;
+
     // generate byte enable mask
     unique case (sbaccess_i)
       3'b000: begin
@@ -108,7 +111,7 @@ module dm_sba #(
 
       Read: begin
         req = 1'b1;
-        be = be_mask;
+        if (ReadByteEnable) be = be_mask;
         if (gnt) state_d = WaitRead;
       end
 

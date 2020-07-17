@@ -23,7 +23,8 @@ module dm_top #(
   parameter int unsigned        DmBaseAddress    = 'h1000, // default to non-zero page
   // Bitmask to select physically available harts for systems
   // that don't use hart numbers in a contiguous fashion.
-  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}}
+  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}},
+  parameter bit                 ReadByteEnable   = 1 // toggle new behavior to drive master_be_o during a read
 ) (
   input  logic                  clk_i,       // clock
   input  logic                  rst_ni,      // asynchronous reset active low, connect PoR here, not the system reset
@@ -149,7 +150,8 @@ module dm_top #(
   );
 
   dm_sba #(
-    .BusWidth(BusWidth)
+    .BusWidth(BusWidth),
+    .ReadByteEnable(ReadByteEnable)
   ) i_dm_sba (
     .clk_i,
     .rst_ni,
