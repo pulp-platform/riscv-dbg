@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- Added parameter ReadByteEnable that may be disabled to revert SBA _be_ behavior to 0 on reads
 - Optional wrapper `dm_obi_top.sv` that wraps `dm_top` providing an OBI compliant interface
 - `tb` that runs dm in conjunction with ri5cy and OpenOCD
 - `.travis-ci.yml` running `tb` with verilator
@@ -15,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Made second scratch register optional (default is two) from [@zarubaf](https://github.com/zarubaf
 
 ### Fixed
+- Fix for SBA _be_ when reading to match the request size from [@jm4rtin](https://github.com/jm4rtin)
 - Off-by-one error in data and progbuf end address from [@pbing](https://github.com/pbing)
 - Haltsum1-3 calculation
 
