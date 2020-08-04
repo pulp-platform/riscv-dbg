@@ -76,7 +76,7 @@ module dm_obi_top #(
   output logic                  dmactive_o,                             // debug module is active
   output logic [NrHarts-1:0]    debug_req_o,                            // async debug request
   input  logic [NrHarts-1:0]    unavailable_i,                          // communicate whether the hart is unavailable (e.g.: power down)
-  dm::hartinfo_t [NrHarts-1:0]  hartinfo_i,
+  input  dm::hartinfo_t [NrHarts-1:0] hartinfo_i,
 
   input  logic                  slave_req_i,
   output logic                  slave_gnt_o,                            // OBI grant for slave_req_i (not present on dm_top)
