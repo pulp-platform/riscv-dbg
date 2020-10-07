@@ -630,19 +630,4 @@ module dm_csrs #(
     end
   end
 
-  ///////////////////////////////////////////////////////
-  // assertions
-  ///////////////////////////////////////////////////////
-
-  //pragma translate_off
-  `ifndef VERILATOR
-  haltsum: assert property (
-      @(posedge clk_i) disable iff (!rst_ni)
-          (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) |->
-              !({1'b0, dmi_req_i.addr} inside
-                  {dm::HaltSum0, dm::HaltSum1, dm::HaltSum2, dm::HaltSum3}))
-      else $warning("Haltsums have not been properly tested yet.");
-  `endif
-  //pragma translate_on
-
 endmodule : dm_csrs
