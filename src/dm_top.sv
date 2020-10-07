@@ -20,6 +20,7 @@
 module dm_top #(
     parameter int                 NrHarts          = 1,
     parameter int                 BusWidth         = 32,
+    parameter int                 Xlen             = 32,
     parameter logic [NrHarts-1:0] SelectableHarts  = 1  // Bitmask to select physically available harts for systems
                                                         // that don't use hart numbers in a contiguous fashion.
 
@@ -183,6 +184,7 @@ module dm_top #(
     dm_mem #(
         .NrHarts(NrHarts),
         .BusWidth(BusWidth),
+        .Xlen(Xlen),
         .SelectableHarts(SelectableHarts)
     ) i_dm_mem (
         .clk_i                   ( clk_i                 ),

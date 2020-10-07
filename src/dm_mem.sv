@@ -19,6 +19,7 @@
 module dm_mem #(
     parameter int                 NrHarts          = -1,
     parameter int                 BusWidth         = -1,
+    parameter int                 Xlen             = -1,
     parameter logic [NrHarts-1:0] SelectableHarts  = -1
 )(
     input  logic                             clk_i,       // Clock
@@ -58,7 +59,7 @@ module dm_mem #(
 );
 
     localparam int HartSelLen = (NrHarts == 1) ? 1 : $clog2(NrHarts);
-    localparam int MaxAar = (BusWidth == 64) ? 4 : 3;
+    localparam int MaxAar = (Xlen == 64) ? 4 : 3;
     localparam DbgAddressBits = 12;
     localparam logic [DbgAddressBits-1:0] DataBase = (dm::DataAddr);
     localparam logic [DbgAddressBits-1:0] DataEnd = (dm::DataAddr + 4*dm::DataCount);
