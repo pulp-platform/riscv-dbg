@@ -71,7 +71,6 @@ RTLSRC_VERI_TB          := boot_rom.sv \
 				dp_ram.sv \
 				mm_ram.sv \
 				SimJTAG.sv \
-				tb_test_env.sv \
 				tb_top_verilator.sv
 
 RTLSRC_INCDIR           := riscv/rtl/include
