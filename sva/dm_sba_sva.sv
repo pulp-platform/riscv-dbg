@@ -35,7 +35,7 @@ module dm_sba_sva #(
   input logic           clk_i,
   input logic           dmactive_i,
   input logic [2:0]     sbaccess_i,
-  input dm::sba_state_t state_d
+  input dm::sba_state_e state_d
 );
 
   ///////////////////////////////////////////////////////

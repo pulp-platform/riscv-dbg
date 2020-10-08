@@ -307,7 +307,7 @@ package dm;
     Write,
     WaitRead,
     WaitWrite
-  } sba_state_t;
+  } sba_state_e;
 
   // Instruction Generation Helpers
   function automatic logic [31:0] jal (logic [4:0]  rd,

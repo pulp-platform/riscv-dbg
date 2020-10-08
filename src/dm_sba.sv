@@ -53,7 +53,7 @@ module dm_sba #(
   output logic [2:0]             sberror_o // bus error occurred
 );
 
-  dm::sba_state_t state_d, state_q;
+  dm::sba_state_e state_d, state_q;
 
   logic [BusWidth-1:0]           address;
   logic                          req;
