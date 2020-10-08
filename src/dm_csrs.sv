@@ -520,7 +520,7 @@ module dm_csrs #(
     if (dmcontrol_q.resumereq && resumeack_i) begin
       dmcontrol_d.resumereq = 1'b0;
     end
-    // static values for dcsr
+    // static values for sbcs
     sbcs_d.sbversion            = 3'b1;
     sbcs_d.sbbusy               = sbbusy_i;
     sbcs_d.sbasize              = $bits(sbcs_d.sbasize)'(BusWidth);
@@ -529,7 +529,6 @@ module dm_csrs #(
     sbcs_d.sbaccess32           = logic'(BusWidth == 32'd32);
     sbcs_d.sbaccess16           = 1'b0;
     sbcs_d.sbaccess8            = 1'b0;
-    sbcs_d.sbaccess             = (BusWidth == 32'd64) ? 3'd3 : 3'd2;
   end
 
   // output multiplexer

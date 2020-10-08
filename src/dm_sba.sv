@@ -102,7 +102,7 @@ module dm_sba #(
     unique case (state_q)
       Idle: begin
         // debugger requested a read
-        if (sbaddress_write_valid_i && sbreadonaddr_i)  state_d = Read;
+        if (sbaddress_write_valid_i && sbreadonaddr_i) state_d = Read;
         // debugger requested a write
         if (sbdata_write_valid_i) state_d = Write;
         // perform another read
@@ -141,12 +141,25 @@ module dm_sba #(
       default: state_d = Idle; // catch parasitic state
     endcase
 
-    // handle error case
-    if (sbaccess_i > 3 && state_q != Idle) begin
-      req             = 1'b0;
-      state_d         = Idle;
-      sberror_valid_o = 1'b1;
-      sberror_o       = 3'd3;
+    // check for SBA configuration errors at start of transaction
+    if (state_q != Idle) begin
+      // handle unsupported sbaccess value error case (currently only supporting full bus width transfers)
+      if (!(((sbaccess_i == 3'd2) && (BusWidth == 32'd32)) || ((sbaccess_i == 3'd3) && (BusWidth == 32'd64)))) begin
+        req             = 1'b0;
+        state_d         = Idle;
+        sberror_valid_o = 1'b1;
+        sberror_o       = 3'd4;
+      end else begin
+        // handle misalignment case
+        if (((sbaccess_i == 3'd1) && (sbaddress_i[0:0] != 1'b0)) ||
+            ((sbaccess_i == 3'd2) && (sbaddress_i[1:0] != 2'b0)) ||
+            ((sbaccess_i == 3'd3) && (sbaddress_i[2:0] != 3'b0))) begin
+          req             = 1'b0;
+          state_d         = Idle;
+          sberror_valid_o = 1'b1;
+          sberror_o       = 3'd3;
+        end
+      end
     end
     // further error handling should go here ...
   end
