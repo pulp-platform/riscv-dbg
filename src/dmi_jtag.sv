@@ -162,7 +162,7 @@ module dmi_jtag #(
       error_d = DMIBusy;
     end
     // clear sticky error flag
-    if (dmi_reset && dtmcs_select) begin
+    if (update_dr && dmi_reset && dtmcs_select) begin
       error_d = DMINoError;
     end
   end
