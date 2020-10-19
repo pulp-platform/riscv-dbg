@@ -323,24 +323,14 @@ module dm_csrs #(
           resp_queue_data = sbcs_q;
         end
         dm::SBAddress0: begin
-          // access while the SBA was busy
-          if (sbbusy_i) begin
-            sbcs_d.sbbusyerror = 1'b1;
-          end else begin
-            resp_queue_data = sbaddr_q[31:0];
-          end
+          resp_queue_data = sbaddr_q[31:0];
         end
         dm::SBAddress1: begin
-          // access while the SBA was busy
-          if (sbbusy_i) begin
-            sbcs_d.sbbusyerror = 1'b1;
-          end else begin
-            resp_queue_data = sbaddr_q[63:32];
-          end
+          resp_queue_data = sbaddr_q[63:32];
         end
         dm::SBData0: begin
           // access while the SBA was busy
-          if (sbbusy_i) begin
+          if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
           end else begin
             sbdata_read_valid_o = (sbcs_q.sberror == '0);
@@ -349,7 +339,7 @@ module dm_csrs #(
         end
         dm::SBData1: begin
           // access while the SBA was busy
-          if (sbbusy_i) begin
+          if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
           end else begin
             resp_queue_data = sbdata_q[63:32];
@@ -442,7 +432,7 @@ module dm_csrs #(
         end
         dm::SBAddress0: begin
           // access while the SBA was busy
-          if (sbbusy_i) begin
+          if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
           end else begin
             sbaddr_d[31:0] = dmi_req_i.data;
@@ -451,7 +441,7 @@ module dm_csrs #(
         end
         dm::SBAddress1: begin
           // access while the SBA was busy
-          if (sbbusy_i) begin
+          if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
           end else begin
             sbaddr_d[63:32] = dmi_req_i.data;
@@ -459,7 +449,7 @@ module dm_csrs #(
         end
         dm::SBData0: begin
           // access while the SBA was busy
-          if (sbbusy_i) begin
+          if (sbbusy_i || sbcs_q.sbbusyerror) begin
            sbcs_d.sbbusyerror = 1'b1;
           end else begin
             sbdata_d[31:0] = dmi_req_i.data;
@@ -468,7 +458,7 @@ module dm_csrs #(
         end
         dm::SBData1: begin
           // access while the SBA was busy
-          if (sbbusy_i) begin
+          if (sbbusy_i || sbcs_q.sbbusyerror) begin
            sbcs_d.sbbusyerror = 1'b1;
           end else begin
             sbdata_d[63:32] = dmi_req_i.data;
