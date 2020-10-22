@@ -214,14 +214,13 @@ module dm_mem #(
   end
 
   // read/write logic
-  logic [63:0] data_bits;
+  logic [dm::DataCount-1:0][31:0] data_bits;
   logic [7:0][7:0] rdata;
   always_comb begin : p_rw_logic
 
     halted_d_aligned   = NrHartsAligned'(halted_q);
     resuming_d_aligned = NrHartsAligned'(resuming_q);
     rdata_d        = rdata_q;
-    // convert the data in bits representation
     data_bits      = data_i;
     rdata          = '0;
 
@@ -258,9 +257,13 @@ module dm_mem #(
           // core can write data registers
           [DataBaseAddr:DataEndAddr]: begin
             data_valid_o = 1'b1;
-            for (int i = 0; i < $bits(be_i); i++) begin
-              if (be_i[i]) begin
-                data_bits[i*8+:8] = wdata_i[i*8+:8];
+            for (int dc = 0; dc < dm::DataCount; dc++) begin
+              if ((addr_i[DbgAddressBits-1:2] - DataBaseAddr[DbgAddressBits-1:2]) == dc) begin
+                for (int i = 0; i < $bits(be_i); i++) begin
+                  if (be_i[i]) begin
+                    data_bits[dc][i*8+:8] = wdata_i[i*8+:8];
+                  end
+                end
               end
             end
           end
@@ -293,10 +296,8 @@ module dm_mem #(
 
           [DataBaseAddr:DataEndAddr]: begin
             rdata_d = {
-                      data_i[$clog2(dm::ProgBufSize)'(addr_i[DbgAddressBits-1:3] -
-                          DataBaseAddr[DbgAddressBits-1:3] + 1'b1)],
-                      data_i[$clog2(dm::ProgBufSize)'(addr_i[DbgAddressBits-1:3] -
-                          DataBaseAddr[DbgAddressBits-1:3])]
+                      data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3]) << 1) + 1'b1)],
+                      data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3]) << 1))]
                       };
           end
 
