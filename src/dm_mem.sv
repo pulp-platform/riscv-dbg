@@ -261,7 +261,13 @@ module dm_mem #(
               if ((addr_i[DbgAddressBits-1:2] - DataBaseAddr[DbgAddressBits-1:2]) == dc) begin
                 for (int i = 0; i < $bits(be_i); i++) begin
                   if (be_i[i]) begin
-                    data_bits[dc][i*8+:8] = wdata_i[i*8+:8];
+                    if (i>3) begin // for upper 32bit data write (only used for BusWidth ==  64)
+                      if ((dc+1) < dm::DataCount) begin // ensure we write to an implemented data register
+                        data_bits[dc+1][(i-4)*8+:8] = wdata_i[i*8+:8];
+                      end
+                    end else begin // for lower 32bit data write
+                      data_bits[dc][i*8+:8] = wdata_i[i*8+:8];
+                    end
                   end
                 end
               end
