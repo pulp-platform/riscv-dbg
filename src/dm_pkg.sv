@@ -300,6 +300,14 @@ package dm;
     CSR_INSTRET        = 12'hC02
   } csr_reg_t;
 
+  // SBA state
+  typedef enum logic [2:0] {
+    Idle,
+    Read,
+    Write,
+    WaitRead,
+    WaitWrite
+  } sba_state_e;
 
   // Instruction Generation Helpers
   function automatic logic [31:0] jal (logic [4:0]  rd,
