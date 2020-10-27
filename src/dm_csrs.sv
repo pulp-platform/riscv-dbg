@@ -299,7 +299,7 @@ module dm_csrs #(
               cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
             end
           //An abstract command was executing while one of the data registers was read
-          end else begin
+          end else if (cmderr_q == dm::CmdErrNone) begin
               cmderr_d = dm::CmdErrBusy;
           end
         end
@@ -318,7 +318,7 @@ module dm_csrs #(
             cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
   
           //An abstract command was executing while one of the progbuf registers was read
-          end else begin
+          end else if (cmderr_q == dm::CmdErrNone) begin
             cmderr_d = dm::CmdErrBusy;
           end
         end
@@ -379,7 +379,7 @@ module dm_csrs #(
                 cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
               end
             //An abstract command was executing while one of the data registers was written
-            end else begin
+            end else if (cmderr_q == dm::CmdErrNone) begin
               cmderr_d = dm::CmdErrBusy;
             end
           end
@@ -439,7 +439,7 @@ module dm_csrs #(
             // range of autoexecprogbuf is 31:16
             cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
           //An abstract command was executing while one of the progbuf registers was written
-          end else begin
+          end else if (cmderr_q == dm::CmdErrNone) begin
             cmderr_d = dm::CmdErrBusy;
           end
         end
