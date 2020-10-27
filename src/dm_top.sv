@@ -215,18 +215,4 @@ module dm_top #(
     .rdata_o                 ( slave_rdata_o         )
   );
 
-
-`ifndef VERILATOR
-  initial begin
-    assert (BusWidth == 32 || BusWidth == 64)
-        else $fatal(1, "DM needs a bus width of either 32 or 64 bits");
-    #0; // Avoid initial X's on hartinfo_i
-    // Fail if the DM is not located on the zero page and one hart doesn't have two scratch registers.
-    for (int i = 0; i < NrHarts; i++) begin
-      assert ((DmBaseAddress > 0 && hartinfo_i[i].nscratch >= 2) || (DmBaseAddress == 0 && hartinfo_i[i].nscratch >= 1))
-        else $fatal(1, "If the DM is not located at the zero page each hart needs at lest two scratch registers %d %d",i, hartinfo_i[i].nscratch );
-    end
-  end
-`endif
-
 endmodule : dm_top
