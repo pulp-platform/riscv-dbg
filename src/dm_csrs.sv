@@ -298,6 +298,9 @@ module dm_csrs #(
             if (autoexecdata_idx < $bits(abstractauto_q.autoexecdata)) begin
               cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
             end
+          //An abstract command was executing while one of the data registers was read
+          end else if (cmderr_q == dm::CmdErrNone) begin
+              cmderr_d = dm::CmdErrBusy;
           end
         end
         dm::DMControl:    resp_queue_data = dmcontrol_q;
@@ -313,6 +316,10 @@ module dm_csrs #(
             // check whether we need to re-execute the command (just give a cmd_valid)
             // range of autoexecprogbuf is 31:16
             cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
+  
+          //An abstract command was executing while one of the progbuf registers was read
+          end else if (cmderr_q == dm::CmdErrNone) begin
+            cmderr_d = dm::CmdErrBusy;
           end
         end
         dm::HaltSum0: resp_queue_data = haltsum0;
@@ -353,12 +360,17 @@ module dm_csrs #(
     if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_WRITE) begin
       unique case (dm::dm_csr_e'({1'b0, dmi_req_i.addr})) inside
         [(dm::Data0):DataEnd]: begin
-          // attempts to write them while busy is set does not change their value
-          if (!cmdbusy_i && dm::DataCount > 0) begin
-            data_d[dmi_req_i.addr[$clog2(dm::DataCount)-1:0]] = dmi_req_i.data;
-            // check whether we need to re-execute the command (just give a cmd_valid)
-            if (autoexecdata_idx < $bits(abstractauto_q.autoexecdata)) begin
-              cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
+          if (dm::DataCount > 0) begin
+            // attempts to write them while busy is set does not change their value
+            if (!cmdbusy_i) begin
+              data_d[dmi_req_i.addr[$clog2(dm::DataCount)-1:0]] = dmi_req_i.data;
+              // check whether we need to re-execute the command (just give a cmd_valid)
+              if (autoexecdata_idx < $bits(abstractauto_q.autoexecdata)) begin
+                cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
+              end
+            //An abstract command was executing while one of the data registers was written
+            end else if (cmderr_q == dm::CmdErrNone) begin
+              cmderr_d = dm::CmdErrBusy;
             end
           end
         end
@@ -416,6 +428,9 @@ module dm_csrs #(
             // was busy
             // range of autoexecprogbuf is 31:16
             cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
+          //An abstract command was executing while one of the progbuf registers was written
+          end else if (cmderr_q == dm::CmdErrNone) begin
+            cmderr_d = dm::CmdErrBusy;
           end
         end
         dm::SBCS: begin
