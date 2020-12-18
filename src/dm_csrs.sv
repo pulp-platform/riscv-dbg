@@ -180,8 +180,8 @@ module dm_csrs #(
 
   // a successful response returns zero
   assign dmi_resp_o.resp = dm::DTM_SUCCESS;
-  assign dmi_resp_valid_o     = ~resp_queue_empty;
-  assign dmi_req_ready_o      = ~resp_queue_full;
+  assign dmi_resp_valid_o     = ~resp_queue_empty & ~cmdbusy_i;
+  assign dmi_req_ready_o      = ~resp_queue_full & ~cmdbusy_i;
   assign resp_queue_push      = dmi_req_valid_i & dmi_req_ready_o;
   // SBA
   assign sbautoincrement_o = sbcs_q.sbautoincrement;
@@ -555,7 +555,7 @@ module dm_csrs #(
   assign progbuf_o   = progbuf_q;
   assign data_o      = data_q;
 
-  assign resp_queue_pop = dmi_resp_ready_i & ~resp_queue_empty;
+  assign resp_queue_pop = dmi_resp_ready_i & ~resp_queue_empty & ~cmdbusy_i;
 
   assign ndmreset_o = dmcontrol_q.ndmreset;
 
