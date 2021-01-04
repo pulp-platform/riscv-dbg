@@ -161,7 +161,7 @@ module dm_sba #(
   assign master_req_o    = req;
   assign master_add_o    = address[BusWidth-1:0];
   assign master_we_o     = we;
-  assign master_wdata_o  = sbdata_i[BusWidth-1:0];
+  assign master_wdata_o  = sbdata_i[BusWidth-1:0] << (8*(be_idx & ('1<<sbaccess_i)));
   assign master_be_o     = be[BusWidth/8-1:0];
   assign gnt             = master_gnt_i;
   assign sbdata_valid_o  = master_r_valid_i;
