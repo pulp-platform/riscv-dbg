@@ -165,6 +165,6 @@ module dm_sba #(
   assign master_be_o     = be[BusWidth/8-1:0];
   assign gnt             = master_gnt_i;
   assign sbdata_valid_o  = master_r_valid_i;
-  assign sbdata_o        = master_r_rdata_i[BusWidth-1:0];
+  assign sbdata_o        = master_r_rdata_i[BusWidth-1:0] >> (8*(be_idx & '1<<sbaccess_i));
 
 endmodule : dm_sba
