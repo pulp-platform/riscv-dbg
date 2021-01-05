@@ -141,11 +141,19 @@ module dm_sba #(
     endcase
 
     // handle error case
-    if (sbaccess_i > 3 && state_q != dm::Idle) begin
+    if (sbaccess_i > $clog2(BusWidth/8) && state_q != dm::Idle) begin
       req             = 1'b0;
       state_d         = dm::Idle;
       sberror_valid_o = 1'b1;
-      sberror_o       = 3'd3;
+      sberror_o       = 3'd4; // unsupported size was requested
+    end
+
+    //if sbaccess_i lsbs of address are not 0 - report misalignment error
+    if (|(sbaddress_i & ~('1<<sbaccess_i)) && state_q != dm::Idle) begin
+      req             = 1'b0;
+      state_d         = dm::Idle;
+      sberror_valid_o = 1'b1;
+      sberror_o       = 3'd3; // alignment error
     end
     // further error handling should go here ...
   end
