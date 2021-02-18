@@ -12,11 +12,11 @@ parser.add_argument('filename', metavar='filename', nargs=1,
                    help='filename of input binary')
 
 args = parser.parse_args()
-file = args.filename[0];
+file = args.filename[0]
 
 # check that file exists
 if not os.path.isfile(file):
-    print("File {} does not exist.".format(filename))
+    print("File {} does not exist.".format(file))
     sys.exit(1)
 
 filename = os.path.splitext(file)[0]
@@ -88,11 +88,11 @@ def read_bin():
 
     with open(filename + ".img", 'rb') as f:
         rom = binascii.hexlify(f.read())
-        rom = map(''.join, zip(rom[::2], rom[1::2]))
+        rom = list(map(''.join, zip(rom[::2].decode("ascii"), rom[1::2].decode("ascii"))))
 
 
     # align to 64 bit
-    align = (int((len(rom) + 7) / 8 )) * 8;
+    align = (int((len(rom) + 7) / 8 )) * 8
 
     for i in range(len(rom), align):
         rom.append("00")
