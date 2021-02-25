@@ -91,8 +91,8 @@ module dm_csrs #(
   logic        resp_queue_pop;
   logic [31:0] resp_queue_data;
 
-  localparam dm::dm_csr_e DataEnd = dm::dm_csr_e'(dm::Data0 + {4'b0, dm::DataCount} - 8'h01);
-  localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'(dm::ProgBuf0 + {4'b0, dm::ProgBufSize} - 8'h01);
+  localparam dm::dm_csr_e DataEnd = dm::dm_csr_e'(dm::Data0 + {4'h0, dm::DataCount} - 8'h1);
+  localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'(dm::ProgBuf0 + {4'h0, dm::ProgBufSize} - 8'h1);
 
   logic [31:0] haltsum0, haltsum1, haltsum2, haltsum3;
   logic [((NrHarts-1)/2**5 + 1) * 32 - 1 : 0] halted;
@@ -211,10 +211,18 @@ module dm_csrs #(
   end
 
   // helper variables
+  dm::dm_csr_e dm_csr_addr;
   dm::sbcs_t sbcs;
   dm::dmcontrol_t dmcontrol;
   dm::abstractcs_t a_abstractcs;
-  logic [4:0] autoexecdata_idx;
+  logic [3:0] autoexecdata_idx; // 0 == Data0 ... 11 == Data11
+
+  // Get the data index, i.e. 0 for dm::Data0 up to 11 for dm::Data11
+  assign dm_csr_addr = dm::dm_csr_e'({1'b0, dmi_req_i.addr});
+  // Xilinx Vivado 2020.1 does not allow subtraction of two enums; do the subtraction with logic
+  // types instead.
+  assign autoexecdata_idx = 4'({dm_csr_addr} - {dm::Data0});
+
   always_comb begin : csr_read_write
     // --------------------
     // Static Values (R/O)
@@ -271,7 +279,7 @@ module dm_csrs #(
     sbaddr_d            = 64'(sbaddress_i);
     sbdata_d            = sbdata_q;
 
-    resp_queue_data         = 32'b0;
+    resp_queue_data         = 32'h0;
     cmd_valid_d             = 1'b0;
     sbaddress_write_valid_o = 1'b0;
     sbdata_read_valid_o     = 1'b0;
@@ -283,24 +291,17 @@ module dm_csrs #(
     dmcontrol    = '0;
     a_abstractcs = '0;
 
-    autoexecdata_idx    = dmi_req_i.addr[4:0] - 5'(dm::Data0);
-
-    // localparam int unsigned DataCountAlign = $clog2(dm::DataCount);
     // reads
     if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) begin
-      unique case ({1'b0, dmi_req_i.addr}) inside
+      unique case (dm_csr_addr) inside
         [(dm::Data0):DataEnd]: begin
-          // logic [$clog2(dm::DataCount)-1:0] resp_queue_idx;
-          // resp_queue_idx = dmi_req_i.addr[4:0] - int'(dm::Data0);
           resp_queue_data = data_q[$clog2(dm::DataCount)'(autoexecdata_idx)];
           if (!cmdbusy_i) begin
             // check whether we need to re-execute the command (just give a cmd_valid)
-            if (autoexecdata_idx < $bits(abstractauto_q.autoexecdata)) begin
-              cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
-            end
-          //An abstract command was executing while one of the data registers was read
+            cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
+          // An abstract command was executing while one of the data registers was read
           end else if (cmderr_q == dm::CmdErrNone) begin
-              cmderr_d = dm::CmdErrBusy;
+            cmderr_d = dm::CmdErrBusy;
           end
         end
         dm::DMControl:    resp_queue_data = dmcontrol_q;
@@ -316,8 +317,8 @@ module dm_csrs #(
             // check whether we need to re-execute the command (just give a cmd_valid)
             // range of autoexecprogbuf is 31:16
             cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
-  
-          //An abstract command was executing while one of the progbuf registers was read
+
+          // An abstract command was executing while one of the progbuf registers was read
           end else if (cmderr_q == dm::CmdErrNone) begin
             cmderr_d = dm::CmdErrBusy;
           end
@@ -358,16 +359,14 @@ module dm_csrs #(
 
     // write
     if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_WRITE) begin
-      unique case (dm::dm_csr_e'({1'b0, dmi_req_i.addr})) inside
+      unique case (dm_csr_addr) inside
         [(dm::Data0):DataEnd]: begin
           if (dm::DataCount > 0) begin
             // attempts to write them while busy is set does not change their value
             if (!cmdbusy_i) begin
               data_d[dmi_req_i.addr[$clog2(dm::DataCount)-1:0]] = dmi_req_i.data;
               // check whether we need to re-execute the command (just give a cmd_valid)
-              if (autoexecdata_idx < $bits(abstractauto_q.autoexecdata)) begin
-                cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
-              end
+              cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
             //An abstract command was executing while one of the data registers was written
             end else if (cmderr_q == dm::CmdErrNone) begin
               cmderr_d = dm::CmdErrBusy;
@@ -412,7 +411,7 @@ module dm_csrs #(
         dm::AbstractAuto: begin
           // this field can only be written legally when there is no command executing
           if (!cmdbusy_i) begin
-            abstractauto_d                 = 32'b0;
+            abstractauto_d                 = 32'h0;
             abstractauto_d.autoexecdata    = 12'(dmi_req_i.data[dm::DataCount-1:0]);
             abstractauto_d.autoexecprogbuf = 16'(dmi_req_i.data[dm::ProgBufSize-1+16:16]);
           end else if (cmderr_q == dm::CmdErrNone) begin
@@ -526,7 +525,7 @@ module dm_csrs #(
       dmcontrol_d.resumereq = 1'b0;
     end
     // static values for dcsr
-    sbcs_d.sbversion            = 3'b1;
+    sbcs_d.sbversion            = 3'd1;
     sbcs_d.sbbusy               = sbbusy_i;
     sbcs_d.sbasize              = $bits(sbcs_d.sbasize)'(BusWidth);
     sbcs_d.sbaccess128          = 1'b0;
@@ -543,7 +542,7 @@ module dm_csrs #(
     // default assignment
     haltreq_o = '0;
     resumereq_o = '0;
-    if (selected_hart < (HartSelLen+1)'(NrHarts)) begin
+    if (selected_hart <= HartSelLen'(NrHarts-1)) begin
       haltreq_o[selected_hart]   = dmcontrol_q.haltreq;
       resumereq_o[selected_hart] = dmcontrol_q.resumereq;
     end
