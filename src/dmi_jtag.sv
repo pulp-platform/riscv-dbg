@@ -39,16 +39,66 @@ module dmi_jtag #(
   output logic         td_o,     // JTAG test data output pad
   output logic         tdo_oe_o  // Data out output enable
 );
-  assign       dmi_rst_no = rst_ni;
 
-  logic        test_logic_reset;
-  logic        shift_dr;
-  logic        update_dr;
-  logic        capture_dr;
-  logic        dmi_access;
-  logic        dtmcs_select;
-  logic        dmi_reset;
-  logic        dmi_tdi;
+  typedef enum logic [1:0] {
+    DMINoError = 2'h0, DMIReservedError = 2'h1,
+    DMIOPFailed = 2'h2, DMIBusy = 2'h3
+  } dmi_error_e;
+  dmi_error_e error_d, error_q;
+
+  logic tck;
+  logic trst_n;
+  logic update;
+  logic capture;
+  logic shift;
+  logic tdi;
+
+  // -------------------------------
+  // Debug Module Control and Status
+  // -------------------------------
+  logic dtmcs_select;
+
+  dm::dtmcs_t dtmcs_d, dtmcs_q;
+
+  always_comb begin
+    dtmcs_d  = dtmcs_q;
+
+    if (capture) begin
+      if (dtmcs_select) begin
+        dtmcs_d  = '{
+                      zero1        : '0,
+                      dmihardreset : 1'b0,
+                      dmireset     : 1'b0,
+                      zero0        : '0,
+                      idle         : 3'd1, // 1: Enter Run-Test/Idle and leave it immediately
+                      dmistat      : error_q, // 0: No error, 2: Op failed, 3: too fast
+                      abits        : 6'd7, // The size of address in dmi
+                      version      : 4'd1  // Version described in spec version 0.13 (and later?)
+                    };
+      end
+    end
+
+    if (shift) begin
+      if (dtmcs_select) dtmcs_d  = {tdi, 31'(dtmcs_q >> 1)};
+    end
+  end
+
+  always_ff @(posedge tck or negedge trst_n) begin
+    if (!trst_n) begin
+      dtmcs_q <= '0;
+    end else begin
+      dtmcs_q <= dtmcs_d;
+    end
+  end
+
+  // ----------------------------
+  // DMI (Debug Module Interface)
+  // ----------------------------
+  // TODO(zarubaf): Might need to be connected to the `dtmcs_q.dmihardreset`
+  // signal.
+  assign dmi_rst_no = rst_ni;
+
+  logic        dmi_select;
   logic        dmi_tdo;
 
   dm::dmi_req_t  dmi_req;
@@ -65,11 +115,6 @@ module dmi_jtag #(
     logic [1:0]  op;
   } dmi_t;
 
-  typedef enum logic [1:0] {
-    DMINoError = 2'h0, DMIReservedError = 2'h1,
-    DMIOPFailed = 2'h2, DMIBusy = 2'h3
-  } dmi_error_e;
-
   typedef enum logic [2:0] { Idle, Read, WaitReadValid, Write, WaitWriteValid } state_e;
   state_e state_d, state_q;
 
@@ -82,11 +127,10 @@ module dmi_jtag #(
   assign dmi_req.addr = address_q;
   assign dmi_req.data = data_q;
   assign dmi_req.op   = (state_q == Write) ? dm::DTM_WRITE : dm::DTM_READ;
-  // we'will always be ready to accept the data we requested
+  // We will always be ready to accept the data we requested.
   assign dmi_resp_ready = 1'b1;
 
   logic error_dmi_busy;
-  dmi_error_e error_d, error_q;
 
   always_comb begin : p_fsm
     error_dmi_busy = 1'b0;
@@ -101,7 +145,7 @@ module dmi_jtag #(
     unique case (state_q)
       Idle: begin
         // make sure that no error is sticky
-        if (dmi_access && update_dr && (error_q == DMINoError)) begin
+        if (dmi_select && update && (error_q == DMINoError)) begin
           // save address and value
           address_d = dmi.address;
           data_d = dmi.data;
@@ -152,16 +196,16 @@ module dmi_jtag #(
       end
     endcase
 
-    // update_dr means we got another request but we didn't finish
+    // update means we got another request but we didn't finish
     // the one in progress, this state is sticky
-    if (update_dr && state_q != Idle) begin
+    if (update && state_q != Idle) begin
       error_dmi_busy = 1'b1;
     end
 
-    // if capture_dr goes high while we are in the read state
+    // if capture goes high while we are in the read state
     // or in the corresponding wait state we are not giving back a valid word
     // -> throw an error
-    if (capture_dr && state_q inside {Read, WaitReadValid}) begin
+    if (capture && state_q inside {Read, WaitReadValid}) begin
       error_dmi_busy = 1'b1;
     end
 
@@ -169,7 +213,7 @@ module dmi_jtag #(
       error_d = DMIBusy;
     end
     // clear sticky error flag
-    if (update_dr && dmi_reset && dtmcs_select) begin
+    if (update && dtmcs_q.dmireset && dtmcs_select) begin
       error_d = DMINoError;
     end
   end
@@ -180,8 +224,8 @@ module dmi_jtag #(
   always_comb begin : p_shift
     dr_d    = dr_q;
 
-    if (capture_dr) begin
-      if (dmi_access) begin
+    if (capture) begin
+      if (dmi_select) begin
         if (error_q == DMINoError && !error_dmi_busy) begin
           dr_d = {address_q, data_q, DMINoError};
         // DMI was busy, report an error
@@ -191,19 +235,15 @@ module dmi_jtag #(
       end
     end
 
-    if (shift_dr) begin
-      if (dmi_access) begin
-        dr_d = {dmi_tdi, dr_q[$bits(dr_q)-1:1]};
+    if (shift) begin
+      if (dmi_select) begin
+        dr_d = {tdi, dr_q[$bits(dr_q)-1:1]};
       end
-    end
-
-    if (test_logic_reset) begin
-      dr_d = '0;
     end
   end
 
-  always_ff @(posedge tck_i or negedge trst_ni) begin : p_regs
-    if (!trst_ni) begin
+  always_ff @(posedge tck or negedge trst_n) begin
+    if (!trst_n) begin
       dr_q      <= '0;
       state_q   <= Idle;
       address_q <= '0;
@@ -232,16 +272,16 @@ module dmi_jtag #(
     .td_o,
     .tdo_oe_o,
     .testmode_i,
-    .test_logic_reset_o ( test_logic_reset ),
-    .shift_dr_o         ( shift_dr         ),
-    .update_dr_o        ( update_dr        ),
-    .capture_dr_o       ( capture_dr       ),
-    .dmi_access_o       ( dmi_access       ),
-    .dtmcs_select_o     ( dtmcs_select     ),
-    .dmi_reset_o        ( dmi_reset        ),
-    .dmi_error_i        ( error_q          ),
-    .dmi_tdi_o          ( dmi_tdi          ),
-    .dmi_tdo_i          ( dmi_tdo          )
+    .tck_o          ( tck              ),
+    .trst_no        ( trst_n           ),
+    .update_o       ( update           ),
+    .capture_o      ( capture          ),
+    .shift_o        ( shift            ),
+    .tdi_o          ( tdi              ),
+    .dtmcs_select_o ( dtmcs_select     ),
+    .dtmcs_tdo_i    ( dtmcs_q[0]       ),
+    .dmi_select_o   ( dmi_select       ),
+    .dmi_tdo_i      ( dmi_tdo          )
   );
 
   // ---------
@@ -249,8 +289,8 @@ module dmi_jtag #(
   // ---------
   dmi_cdc i_dmi_cdc (
     // JTAG side (master side)
-    .tck_i,
-    .trst_ni,
+    .tck_i             ( tck              ),
+    .trst_ni           ( trst_n           ),
     .jtag_dmi_req_i    ( dmi_req          ),
     .jtag_dmi_ready_o  ( dmi_req_ready    ),
     .jtag_dmi_valid_i  ( dmi_req_valid    ),
