@@ -5,7 +5,7 @@
 // Author: Florian Zaruba <zarubaf@iis.ee.ethz.ch>
 
 
-// The DV interface additionally caries a clock signal.
+// The DV interface additionally carries a clock signal.
 interface DMI_BUS_DV #(
   /// The width of the address.
   parameter int ADDR_WIDTH = -1
