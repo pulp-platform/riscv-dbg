@@ -19,11 +19,13 @@
 module dmi_cdc (
   // JTAG side (master side)
   input  logic             tck_i,
-  input  logic             trst_ni,
 
   input  dm::dmi_req_t     jtag_dmi_req_i,
   output logic             jtag_dmi_ready_o,
   input  logic             jtag_dmi_valid_i,
+  input  logic             jtag_dmi_cdc_clear_i, // Synchronous clear signal.
+                                                 // Triggers reset sequencing
+                                                 // accross CDC
 
   output dm::dmi_resp_t    jtag_dmi_resp_o,
   output logic             jtag_dmi_valid_o,
@@ -42,32 +44,40 @@ module dmi_cdc (
   input  logic             core_dmi_valid_i
 );
 
-  cdc_2phase #(.T(dm::dmi_req_t)) i_cdc_req (
-    .src_rst_ni  ( trst_ni          ),
-    .src_clk_i   ( tck_i            ),
-    .src_data_i  ( jtag_dmi_req_i   ),
-    .src_valid_i ( jtag_dmi_valid_i ),
-    .src_ready_o ( jtag_dmi_ready_o ),
 
-    .dst_rst_ni  ( rst_ni           ),
-    .dst_clk_i   ( clk_i            ),
-    .dst_data_o  ( core_dmi_req_o   ),
-    .dst_valid_o ( core_dmi_valid_o ),
-    .dst_ready_i ( core_dmi_ready_i )
+
+  cdc_2phase_clearable #(.T(dm::dmi_req_t)) i_cdc_req (
+    .src_rst_ni  ( rst_ni               ),
+    .src_clear_i ( jtag_dmi_cdc_clear_i )
+    .src_clk_i   ( tck_i                ),
+    .src_data_i  ( jtag_dmi_req_i       ),
+    .src_valid_i ( jtag_dmi_valid_i     ),
+    .src_ready_o ( jtag_dmi_ready_o     ),
+
+    .dst_rst_ni  ( rst_ni               ),
+    .dst_clear_i ( 1'b0                 ), // No functional reset from core side
+                                           // used (only async).
+    .dst_clk_i   ( clk_i                ),
+    .dst_data_o  ( core_dmi_req_o       ),
+    .dst_valid_o ( core_dmi_valid_o     ),
+    .dst_ready_i ( core_dmi_ready_i     )
   );
 
   cdc_2phase #(.T(dm::dmi_resp_t)) i_cdc_resp (
-    .src_rst_ni  ( rst_ni           ),
-    .src_clk_i   ( clk_i            ),
-    .src_data_i  ( core_dmi_resp_i  ),
-    .src_valid_i ( core_dmi_valid_i ),
-    .src_ready_o ( core_dmi_ready_o ),
+    .src_rst_ni  ( rst_ni               ),
+    .src_clear_i ( 1'b0                 ), // No functional reset from core side
+                                           // used (only async ).
+    .src_clk_i   ( clk_i                ),
+    .src_data_i  ( core_dmi_resp_i      ),
+    .src_valid_i ( core_dmi_valid_i     ),
+    .src_ready_o ( core_dmi_ready_o     ),
 
-    .dst_rst_ni  ( trst_ni          ),
-    .dst_clk_i   ( tck_i            ),
-    .dst_data_o  ( jtag_dmi_resp_o  ),
-    .dst_valid_o ( jtag_dmi_valid_o ),
-    .dst_ready_i ( jtag_dmi_ready_i )
+    .dst_rst_ni  ( trst_ni              ),
+    .dst_clear_i ( jtag_dmi_cdc_clear_i ),
+    .dst_clk_i   ( tck_i                ),
+    .dst_data_o  ( jtag_dmi_resp_o      ),
+    .dst_valid_o ( jtag_dmi_valid_o     ),
+    .dst_ready_i ( jtag_dmi_ready_i     )
   );
 
 endmodule : dmi_cdc
