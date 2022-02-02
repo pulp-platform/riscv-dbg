@@ -48,7 +48,7 @@ module dmi_cdc (
 
   cdc_2phase_clearable #(.T(dm::dmi_req_t)) i_cdc_req (
     .src_rst_ni  ( rst_ni               ),
-    .src_clear_i ( jtag_dmi_cdc_clear_i )
+    .src_clear_i ( jtag_dmi_cdc_clear_i ),
     .src_clk_i   ( tck_i                ),
     .src_data_i  ( jtag_dmi_req_i       ),
     .src_valid_i ( jtag_dmi_valid_i     ),

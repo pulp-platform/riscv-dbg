@@ -145,7 +145,7 @@ module dmi_jtag #(
     dmi_req_valid = 1'b0;
 
     if (dmi_clear) begin
-      state_d   = IDLE;
+      state_d   = Idle;
       data_d    = '0;
       error_d   = DMINoError;
       address_d = '0;
