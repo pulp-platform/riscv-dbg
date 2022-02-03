@@ -55,12 +55,13 @@ module dmi_jtag #(
   logic shift;
   logic tdi;
 
-  assign dmi_clear = jtag_dmi_clear || dtmcs_q.dmihardreset;
+  logic dtmcs_select;
+
+  assign dmi_clear = jtag_dmi_clear || (dtmcs_select && update && dtmcs_q.dmihardreset);
 
   // -------------------------------
   // Debug Module Control and Status
   // -------------------------------
-  logic dtmcs_select;
 
   dm::dtmcs_t dtmcs_d, dtmcs_q;
 
