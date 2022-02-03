@@ -33,6 +33,7 @@ package jtag_test;
       jtag.trst_n <= #TA 0;
       repeat (2) clock();
       jtag.trst_n <= #TA 1;
+      this.ir_select = 'h1;
       clock();
     endtask
 
