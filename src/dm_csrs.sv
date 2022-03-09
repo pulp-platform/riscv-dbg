@@ -584,7 +584,7 @@ module dm_csrs #(
       abstractauto_q <= '0;
       progbuf_q      <= '0;
       data_q         <= '0;
-      sbcs_q         <= '0;
+      sbcs_q         <= '{default: '0,  sbaccess: 3'd2};
       sbaddr_q       <= '0;
       sbdata_q       <= '0;
       havereset_q    <= '1;
@@ -612,7 +612,7 @@ module dm_csrs #(
         abstractauto_q               <= '0;
         progbuf_q                    <= '0;
         data_q                       <= '0;
-        sbcs_q                       <= '0;
+        sbcs_q                       <= '{default: '0,  sbaccess: 3'd2};
         sbaddr_q                     <= '0;
         sbdata_q                     <= '0;
       end else begin
