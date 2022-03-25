@@ -30,6 +30,8 @@ module dm_sba #(
   output logic [BusWidth/8-1:0]  master_be_o,
   input  logic                   master_gnt_i,
   input  logic                   master_r_valid_i,
+  input  logic                   master_r_err_i,
+  input  logic                   master_r_other_err_i, // *other_err_i has priority over *err_i
   input  logic [BusWidth-1:0]    master_r_rdata_i,
 
   input  logic [BusWidth-1:0]    sbaddress_i,
@@ -126,6 +128,15 @@ module dm_sba #(
           state_d = dm::Idle;
           // auto-increment address
           if (sbautoincrement_i) sbaddress_o = sbaddress_i + (32'h1 << sbaccess_i);
+          // check whether an "other" error has been encountered.
+          if (master_r_other_err_i) begin
+            sberror_valid_o = 1'b1;
+            sberror_o = 3'd7;
+          // check whether there was a bus error (== bad address).
+          end else if (master_r_err_i) begin
+            sberror_valid_o = 1'b1;
+            sberror_o = 3'd2;
+          end
         end
       end
 
@@ -134,6 +145,15 @@ module dm_sba #(
           state_d = dm::Idle;
           // auto-increment address
           if (sbautoincrement_i) sbaddress_o = sbaddress_i + (32'h1 << sbaccess_i);
+          // check whether an "other" error has been encountered.
+          if (master_r_other_err_i) begin
+            sberror_valid_o = 1'b1;
+            sberror_o = 3'd7;
+          // check whether there was a bus error (== bad address).
+          end else if (master_r_err_i) begin
+            sberror_valid_o = 1'b1;
+            sberror_o = 3'd2;
+          end
         end
       end
 

@@ -101,8 +101,10 @@ module dm_obi_top #(
   output logic [BusWidth-1:0]   master_wdata_o,
   output logic [BusWidth/8-1:0] master_be_o,
   input  logic                  master_gnt_i,
-  input  logic                  master_rvalid_i, // Renamed according to OBI spec
-  input  logic [BusWidth-1:0]   master_rdata_i,  // Renamed according to OBI spec
+  input  logic                  master_rvalid_i,    // Renamed according to OBI spec
+  input  logic                  master_err_i,
+  input  logic                  master_other_err_i, // *other_err_i has priority over *err_i
+  input  logic [BusWidth-1:0]   master_rdata_i,     // Renamed according to OBI spec
 
   // Connection to DTM - compatible to RocketChip Debug Module
   input  logic                  dmi_rst_ni,
@@ -149,6 +151,8 @@ module dm_obi_top #(
     .master_be_o             ( master_be_o           ),
     .master_gnt_i            ( master_gnt_i          ),
     .master_r_valid_i        ( master_rvalid_i       ), // Renamed according to OBI spec
+    .master_r_err_i          ( master_err_i          ),
+    .master_r_other_err_i    ( master_other_err_i    ), // *other_err_i has priority over *err_i
     .master_r_rdata_i        ( master_rdata_i        ), // Renamed according to OBI spec
 
     .dmi_rst_ni              ( dmi_rst_ni            ),

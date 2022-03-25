@@ -49,6 +49,8 @@ module dm_top #(
   output logic [BusWidth/8-1:0] master_be_o,
   input  logic                  master_gnt_i,
   input  logic                  master_r_valid_i,
+  input  logic                  master_r_err_i,
+  input  logic                  master_r_other_err_i, // *other_err_i has priority over *err_i
   input  logic [BusWidth-1:0]   master_r_rdata_i,
 
   // Connection to DTM - compatible to RocketChip Debug Module
@@ -164,6 +166,8 @@ module dm_top #(
     .master_be_o,
     .master_gnt_i,
     .master_r_valid_i,
+    .master_r_err_i,
+    .master_r_other_err_i,
     .master_r_rdata_i,
 
     .sbaddress_i             ( sbaddress_csrs_sba    ),
