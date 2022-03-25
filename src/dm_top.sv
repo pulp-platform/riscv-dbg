@@ -24,15 +24,18 @@ module dm_top #(
   // Bitmask to select physically available harts for systems
   // that don't use hart numbers in a contiguous fashion.
   parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}},
-  parameter bit                 ReadByteEnable   = 1 // toggle new behavior to drive master_be_o during a read
+  // toggle new behavior to drive master_be_o during a read
+  parameter bit                 ReadByteEnable   = 1
 ) (
   input  logic                  clk_i,       // clock
-  input  logic                  rst_ni,      // asynchronous reset active low, connect PoR here, not the system reset
+  // asynchronous reset active low, connect PoR here, not the system reset
+  input  logic                  rst_ni,
   input  logic                  testmode_i,
   output logic                  ndmreset_o,  // non-debug module reset
   output logic                  dmactive_o,  // debug module is active
   output logic [NrHarts-1:0]    debug_req_o, // async debug request
-  input  logic [NrHarts-1:0]    unavailable_i, // communicate whether the hart is unavailable (e.g.: power down)
+  // communicate whether the hart is unavailable (e.g.: power down)
+  input  logic [NrHarts-1:0]    unavailable_i,
   input  dm::hartinfo_t [NrHarts-1:0] hartinfo_i,
 
   input  logic                  slave_req_i,
