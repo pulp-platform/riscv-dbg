@@ -87,6 +87,11 @@ module dm_sba #(
     endcase
   end
 
+  logic addr_incr_en;
+  logic [BusWidth-1:0] addr_incr;
+  assign addr_incr = BusWidth'(sbautoincrement_i && addr_incr_en) << sbaccess_i;
+  assign sbaddress_o = sbaddress_i + addr_incr;
+
   always_comb begin : p_fsm
     req     = 1'b0;
     address = sbaddress_i;
@@ -96,7 +101,8 @@ module dm_sba #(
 
     sberror_o       = '0;
     sberror_valid_o = 1'b0;
-    sbaddress_o     = sbaddress_i;
+
+    addr_incr_en    = 1'b0;
 
     state_d = state_q;
 
@@ -127,7 +133,7 @@ module dm_sba #(
         if (sbdata_valid_o) begin
           state_d = dm::Idle;
           // auto-increment address
-          if (sbautoincrement_i) sbaddress_o = sbaddress_i + (32'h1 << sbaccess_i);
+          addr_incr_en = 1'b1;
           // check whether an "other" error has been encountered.
           if (master_r_other_err_i) begin
             sberror_valid_o = 1'b1;
@@ -144,7 +150,7 @@ module dm_sba #(
         if (sbdata_valid_o) begin
           state_d = dm::Idle;
           // auto-increment address
-          if (sbautoincrement_i) sbaddress_o = sbaddress_i + (32'h1 << sbaccess_i);
+          addr_incr_en = 1'b1;
           // check whether an "other" error has been encountered.
           if (master_r_other_err_i) begin
             sberror_valid_o = 1'b1;
