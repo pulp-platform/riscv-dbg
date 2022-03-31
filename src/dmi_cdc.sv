@@ -50,6 +50,7 @@ module dmi_cdc (
     .src_rst_ni  ( trst_ni              ),
     .src_clear_i ( jtag_dmi_cdc_clear_i ),
     .src_clk_i   ( tck_i                ),
+    .src_clear_pending_o(), // Not used
     .src_data_i  ( jtag_dmi_req_i       ),
     .src_valid_i ( jtag_dmi_valid_i     ),
     .src_ready_o ( jtag_dmi_ready_o     ),
@@ -57,6 +58,7 @@ module dmi_cdc (
     .dst_rst_ni  ( rst_ni               ),
     .dst_clear_i ( 1'b0                 ), // No functional reset from core side
                                            // used (only async).
+    .dst_clear_pending_o(), // Not used
     .dst_clk_i   ( clk_i                ),
     .dst_data_o  ( core_dmi_req_o       ),
     .dst_valid_o ( core_dmi_valid_o     ),
@@ -67,6 +69,7 @@ module dmi_cdc (
     .src_rst_ni  ( rst_ni               ),
     .src_clear_i ( 1'b0                 ), // No functional reset from core side
                                            // used (only async ).
+    .src_clear_pending_o(), // Not used
     .src_clk_i   ( clk_i                ),
     .src_data_i  ( core_dmi_resp_i      ),
     .src_valid_i ( core_dmi_valid_i     ),
@@ -74,6 +77,7 @@ module dmi_cdc (
 
     .dst_rst_ni  ( trst_ni              ),
     .dst_clear_i ( jtag_dmi_cdc_clear_i ),
+    .dst_clear_pending_o(), //Not used
     .dst_clk_i   ( tck_i                ),
     .dst_data_o  ( jtag_dmi_resp_o      ),
     .dst_valid_o ( jtag_dmi_valid_o     ),
