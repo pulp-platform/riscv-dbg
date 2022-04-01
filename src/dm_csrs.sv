@@ -23,7 +23,8 @@ module dm_csrs #(
   input  logic                              clk_i,           // Clock
   input  logic                              rst_ni,          // Asynchronous reset active low
   input  logic                              testmode_i,
-  input  logic                              dmi_rst_ni,      // Debug Module Intf reset active-low
+  input  logic                              dmi_rst_ni,      // sync. DTM reset,
+                                                             // active-low
   input  logic                              dmi_req_valid_i,
   output logic                              dmi_req_ready_o,
   input  dm::dmi_req_t                      dmi_req_i,
@@ -559,9 +560,10 @@ module dm_csrs #(
     .dtype            ( logic [31:0]         ),
     .DEPTH            ( 2                    )
   ) i_fifo (
-    .clk_i            ( clk_i                ),
-    .rst_ni           ( dmi_rst_ni           ), // reset only when system is re-set
-    .flush_i          ( 1'b0                 ), // we do not need to flush this queue
+    .clk_i,
+    .rst_ni,
+    .flush_i          ( ~dmi_rst_ni          ), // Flush the queue if the DTM is
+                                                // reset
     .testmode_i       ( testmode_i           ),
     .full_o           ( resp_queue_full      ),
     .empty_o          ( resp_queue_empty     ),

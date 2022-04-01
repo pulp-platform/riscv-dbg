@@ -35,6 +35,7 @@ module dmi_cdc (
   input  logic             clk_i,
   input  logic             rst_ni,
 
+  output logic             core_dmi_rst_no,
   output dm::dmi_req_t     core_dmi_req_o,
   output logic             core_dmi_valid_o,
   input  logic             core_dmi_ready_i,
@@ -44,7 +45,7 @@ module dmi_cdc (
   input  logic             core_dmi_valid_i
 );
 
-
+  logic                    core_clear_pending;
 
   cdc_2phase_clearable #(.T(dm::dmi_req_t)) i_cdc_req (
     .src_rst_ni  ( trst_ni              ),
@@ -58,7 +59,10 @@ module dmi_cdc (
     .dst_rst_ni  ( rst_ni               ),
     .dst_clear_i ( 1'b0                 ), // No functional reset from core side
                                            // used (only async).
-    .dst_clear_pending_o(), // Not used
+    .dst_clear_pending_o( core_clear_pending ), // use the clear pending signal
+                                                // to synchronously clear the
+                                                // response FIFO in the dm_top
+                                                // csrs
     .dst_clk_i   ( clk_i                ),
     .dst_data_o  ( core_dmi_req_o       ),
     .dst_valid_o ( core_dmi_valid_o     ),
@@ -83,5 +87,28 @@ module dmi_cdc (
     .dst_valid_o ( jtag_dmi_valid_o     ),
     .dst_ready_i ( jtag_dmi_ready_i     )
   );
+
+  // We need to flush the DMI response FIFO in DM top using the core clock
+  // synchronous clear signal core_dmi_rst_no. We repurpose the clear
+  // pending signal in the core clock domain by generating a 1 cycle pulse from
+  // it.
+
+  logic                    core_clear_pending_q;
+  logic                    core_dmi_rst_nq;
+  logic                    clear_pending_rise_edge_detect;
+
+  assign clear_pending_rise_edge_detect = !core_clear_pending_q && core_clear_pending;
+
+  always_ff @(posedge clk_i, negedge rst_ni) begin
+    if (!rst_ni) begin
+      core_dmi_rst_nq       <= 1'b1;
+      core_clear_pending_q <= 1'b0;
+    end else begin
+      core_dmi_rst_nq       <= ~clear_pending_rise_edge_detect; // active-low!
+      core_clear_pending_q <= core_clear_pending;
+    end
+  end
+
+  assign core_dmi_rst_no = core_dmi_rst_nq;
 
 endmodule : dmi_cdc
