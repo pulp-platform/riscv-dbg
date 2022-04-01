@@ -8,11 +8,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Add sbaccess8 and sbaccess16 support (#106) [@noytzach](https://github.com/noytzach)
 - Implement SBA bad address error (#12) [@msfchaffner](https://github.com/msfschaffner)
+- Added random reset tests to dmi testbench.
 ### Changed
+- Implement `dmihardreset` functionaliy in `dtmcs` register.
+- `dmi_rst_ni` of `dm_top` is now a synchronous signal. However, `dmi_rst_no` of
+  `dmi_jtag` is glitch-free and asserted during all forms (functional or POR) of
+  resets.
 ### Fixed
 - Fixed documentation (csr)
 - Fixed reset value of sbcs register (#127) [@msfchaffner](https://github.com/msfschaffner)
 - Fixed various ascent lint warnings [@msfchaffner](https://github.com/msfschaffner)
+- Implement proper CDC flushing behavior on functional resets and JTAG resets (asynchronous or TestLogicReset driven).
+- Fix JTAG non-compliance in TestLogicReset state (IR should reset to IDCODE).
 
 ## [0.4.1] - 2021-05-04
 ### Added
