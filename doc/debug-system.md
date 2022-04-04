@@ -485,7 +485,6 @@ default the IR register is 5 bits long, but the implementation is parameterized.
   ) (
   ```
 - `DTMCSR`: RISC-V specific control and status register of the JTAG DMI.
-  Currently `dmihardreset` is not implemented.
 - `DMIACCESS`: Access the debug module's register.
     - `abits+33:34`: Address
     - `33:2`: Data

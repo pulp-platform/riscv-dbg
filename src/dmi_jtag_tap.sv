@@ -34,7 +34,8 @@ module dmi_jtag_tap #(
   input  logic        testmode_i,
   // JTAG is interested in writing the DTM CSR register
   output logic        tck_o,
-  output logic        trst_no,
+  // Synchronous reset of the dmi module triggered by JTAG TAP
+  output logic        dmi_clear_o,
   output logic        update_o,
   output logic        capture_o,
   output logic        shift_o,
@@ -72,7 +73,7 @@ module dmi_jtag_tap #(
   logic [IrLength-1:0]  jtag_ir_shift_d, jtag_ir_shift_q;
   // IR register -> this gets captured from shift register upon update_ir
   ir_reg_e              jtag_ir_d, jtag_ir_q;
-  logic capture_ir, shift_ir, update_ir; // pause_ir
+  logic capture_ir, shift_ir, update_ir, test_logic_reset; // pause_ir
 
   always_comb begin : p_jtag
     jtag_ir_shift_d = jtag_ir_shift_q;
@@ -91,6 +92,11 @@ module dmi_jtag_tap #(
     // update IR register
     if (update_ir) begin
       jtag_ir_d = ir_reg_e'(jtag_ir_shift_q);
+    end
+
+    // According to JTAG spec we have to reset the IR to IDCODE in test_logic_reset
+    if (test_logic_reset) begin
+      jtag_ir_d = IDCODE;
     end
   end
 
@@ -202,7 +208,7 @@ module dmi_jtag_tap #(
   // Determination of next state; purely combinatorial
   always_comb begin : p_tap_fsm
 
-    trst_no            = trst_ni;
+    test_logic_reset   = 1'b0;
 
     capture_dr         = 1'b0;
     shift_dr           = 1'b0;
@@ -216,7 +222,7 @@ module dmi_jtag_tap #(
     unique case (tap_state_q)
       TestLogicReset: begin
         tap_state_d = (tms_i) ? TestLogicReset : RunTestIdle;
-        trst_no = 1'b1;
+        test_logic_reset = 1'b1;
       end
       RunTestIdle: begin
         tap_state_d = (tms_i) ? SelectDrScan : RunTestIdle;
@@ -307,5 +313,7 @@ module dmi_jtag_tap #(
   assign update_o = update_dr;
   assign shift_o = shift_dr;
   assign capture_o = capture_dr;
+  assign dmi_clear_o = test_logic_reset;
+
 
 endmodule : dmi_jtag_tap

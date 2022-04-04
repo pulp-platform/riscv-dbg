@@ -242,6 +242,30 @@ module tb_jtag_dmi;
         riscv_dbg.read_dmi(dm::dm_csr_e'(transaction.addr), rdata);
         rsp_mbx.put(rdata);
       end
+      // Randomly reset the dmi using either hard jtag trst_ni, JTAG
+      // TestLogicReset or the dtmcs.dmihardreset bit.
+      if ($urandom_range(0,100) < 5) begin
+        riscv_dbg.wait_idle(30);
+        case ($urandom_range(0,3))
+          0: begin
+            $info("Resetting JTAG DMI using asynchronous JTAG reset signal...");
+            riscv_dbg.reset_master();
+          end
+
+          1: begin
+            $info("Resetting JTAG DMI using JTAG softreset (TestLogicReset TAP state).");
+              riscv_dbg.jtag.soft_reset();
+          end
+
+          2: begin
+            dm::dtmcs_t dtmcs_value;
+            dtmcs_value = '0;
+            dtmcs_value.dmihardreset = 1;
+            $info("Resetting JTAG DMI using DMI dtmcs registers' dmihardreset control bit.");
+            riscv_dbg.write_dtmcs(dtmcs_value);
+          end
+        endcase
+      end
     end
     #1000;
     $finish();
@@ -261,8 +285,10 @@ module tb_jtag_dmi;
       req_mbx.get(req);
       rsp_mbx.get(rsp);
       nr_transactions++;
-      assert(req.addr == req_mon.addr);
-      assert(req.op == req_mon.op);
+      assert(req.addr == req_mon.addr) else
+        $error("Invalid dmi request. Got address %0x instead of %0x.", req_mon.addr, req.addr);
+      assert(req.op == req_mon.op) else
+        $error("Invalid dmi request. Got op %0x instead of %0x.", req_mon.op, req.op);;
       if (req.op == dm::DTM_READ) begin
         assert(rsp_mon.data == rsp);
       end else begin
