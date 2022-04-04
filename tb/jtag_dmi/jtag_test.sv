@@ -43,6 +43,9 @@ package jtag_test;
       repeat (6) clock();
       jtag.tms <= #TA 0;
       clock();
+      // After softreset the IR should be reset to IDCODE so we have to mirror
+      // this in our internal state.
+      this.ir_select = 'h1;
     endtask
 
     // Set IR, but only if it needs to be set.
