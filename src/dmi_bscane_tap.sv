@@ -32,7 +32,7 @@ module dmi_jtag_tap #(
   input  logic        testmode_i,
 
   output logic        tck_o,
-  output logic        trst_no,
+  output logic        dmi_clear_o,
   output logic        update_o,
   output logic        capture_o,
   output logic        shift_o,
@@ -44,16 +44,12 @@ module dmi_jtag_tap #(
   input  logic        dmi_tdo_i
 );
 
-  /// DTMCS Register
-  logic trst;
-  assign trst_no = ~trst;
-
   BSCANE2 #(
     .JTAG_CHAIN (3)
   ) i_tap_dtmcs (
     .CAPTURE (capture_o),
     .DRCK (),
-    .RESET (trst),
+    .RESET (dmi_clear_o),
     .RUNTEST (),
     .SEL (dtmcs_select_o),
     .SHIFT (shift_o),
