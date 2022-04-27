@@ -456,7 +456,9 @@ module dm_csrs #(
           if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
           end else begin
-            sbaddr_d[63:32] = dmi_req_i.data;
+            if (BusWidth > 32) begin
+              sbaddr_d[63:32] = dmi_req_i.data;
+            end
           end
         end
         dm::SBData0: begin
