@@ -19,17 +19,4 @@ jobs:
       #      set environment variables for the shell
       - name: Set Environment variables for the shell
         run: |  
-         export CXX=g++-7 CC=gcc-7
-         export PATH=$RISCV/bin:$VERILATOR_ROOT/bin:$PATH
-         export LIBRARY_PATH=$RISCV/lib
-         export LD_LIBRARY_PATH=$RISCV/lib
-         export C_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/share/verilator/include
-         export CPLUS_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/share/verilator/include
-         export PKG_CONFIG_PATH=$VERILATOR_ROOT/share/pkgconfig
-         export NUM_JOBS=4
-         ci/make-tmp.sh
-         git submodule update --init --recursive
-         ci/downoad-pulp-gcc.sh
-         ci/install-verilator.sh
-         ci/get-openocd.sh
-         ci/veri-run-openocd-compliance.sh
+         export CXX=g++-7 CC=gcc-7 && export PATH=$RISCV/bin:$VERILATOR_ROOT/bin:$PATH && export LIBRARY_PATH=$RISCV/lib && export LD_LIBRARY_PATH=$RISCV/lib && export C_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/share/verilator/include && export CPLUS_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/share/verilator/include && export PKG_CONFIG_PATH=$VERILATOR_ROOT/share/pkgconfig && export NUM_JOBS=4 && ci/make-tmp.sh && git submodule update --init --recursive && ci/downoad-pulp-gcc.sh && ci/install-verilator.sh && ci/get-openocd.sh && ci/veri-run-openocd-compliance.sh
