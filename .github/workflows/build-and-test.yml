@@ -17,7 +17,8 @@ jobs:
           path: $RISCV $VERILATOR_ROOT
       - uses: actions/checkout@v2
       #      set environment variables for the shell
-      - run: |  
+      - name: Set Environment variables for the shell
+        run: |  
          export CXX=g++-7 CC=gcc-7
          export PATH=$RISCV/bin:$VERILATOR_ROOT/bin:$PATH
          export LIBRARY_PATH=$RISCV/lib
