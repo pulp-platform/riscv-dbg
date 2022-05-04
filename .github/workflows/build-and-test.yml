@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v2.4.2
 
       - name: Install dependencies
-        run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test && sudo apt-get install -y gcc-7 g++-7 gperf autoconf automake autotools-dev libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo python-pexpect libusb-1.0-0-dev default-jdk zlib1g-dev valgrind 
+        run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test && sudo apt-get install -y gcc-7 g++-7 gperf autoconf automake autotools-dev libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo python-pexpect libusb-1.0-0-dev default-jdk zlib1g-dev valgrind libfl-dev
       
       - name: Create directories
         run: sudo mkdir -p ${{ env.RISCV }} ${{ env.VERILATOR_ROOT }}
