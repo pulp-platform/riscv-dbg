@@ -7,7 +7,7 @@ env:
   VERILATOR_ROOT: "/home/travis/verilator-4.018"
 jobs:
   build:
-    runs-on: ubuntu-19.04
+    runs-on: ubuntu-latest
     steps:
       - name: Fetch GitHub repo files
         uses: actions/checkout@v2
