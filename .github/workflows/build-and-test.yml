@@ -16,7 +16,7 @@ jobs:
         run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test && sudo apt-get install -y gcc-7 g++-7 gperf autoconf automake autotools-dev libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo python-pexpect libusb-1.0-0-dev default-jdk zlib1g-dev valgrind 
       
       - name: Create directories
-        run: sudo mkdir -p 
+        run: sudo mkdir -p ${{ env.RISCV }} ${{ env.VERILATOR_ROOT }}
 
       - name: Set Environment variables for the shell
         run: export CXX=g++-7 CC=gcc-7 && export PATH=${{ env.RISCV  }}/bin:${{ env.VERILATOR_ROOT }}/bin:$PATH && export LIBRARY_PATH=${{ env.RISCV  }}/lib && export LD_LIBRARY_PATH=${{ env.RISCV  }}/lib && export C_INCLUDE_PATH=${{ env.RISCV }}/include:${{ env.VERILATOR_ROOT }}/share/verilator/include && export CPLUS_INCLUDE_PATH=${{ env.RISCV }}/include:${{ env.VERILATOR_ROOT }}/share/verilator/include && export PKG_CONFIG_PATH=${{ env.VERILATOR_ROOT }}/share/pkgconfig && export NUM_JOBS=4 && ci/make-tmp.sh && git submodule update --init --recursive && ci/download-pulp-gcc.sh && ci/install-verilator.sh && ci/get-openocd.sh && ci/veri-run-openocd-compliance.sh
