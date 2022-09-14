@@ -180,12 +180,12 @@ module dmi_jtag_tap #(
   // ----------------
   logic tck_n, tck_ni;
 
-  cluster_clock_inverter i_tck_inv (
+  tc_clk_inverter i_tck_inv (
     .clk_i ( tck_i  ),
     .clk_o ( tck_ni )
   );
 
-  pulp_clock_mux2 i_dft_tck_mux (
+  tc_clk_mux2 i_dft_tck_mux (
     .clk0_i    ( tck_ni     ),
     .clk1_i    ( tck_i      ), // bypass the inverted clock for testing
     .clk_sel_i ( testmode_i ),
