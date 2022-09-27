@@ -345,6 +345,7 @@ module dm_csrs #(
           // access while the SBA was busy
           if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
+            resp_queue_inp.resp = dm::DTM_BUSY;
           end else begin
             sbdata_read_valid_o = (sbcs_q.sberror == '0);
             resp_queue_inp.data = sbdata_q[31:0];
@@ -354,6 +355,7 @@ module dm_csrs #(
           // access while the SBA was busy
           if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
+            resp_queue_inp.resp = dm::DTM_BUSY;
           end else begin
             resp_queue_inp.data = sbdata_q[63:32];
           end
@@ -455,6 +457,7 @@ module dm_csrs #(
           // access while the SBA was busy
           if (sbbusy_i) begin
             sbcs_d.sbbusyerror = 1'b1;
+            resp_queue_inp.resp = dm::DTM_BUSY;
           end else begin
             sbcs = dm::sbcs_t'(dmi_req_i.data);
             sbcs_d = sbcs;
@@ -467,6 +470,7 @@ module dm_csrs #(
           // access while the SBA was busy
           if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
+            resp_queue_inp.resp = dm::DTM_BUSY;
           end else begin
             sbaddr_d[31:0] = dmi_req_i.data;
             sbaddress_write_valid_o = (sbcs_q.sberror == '0);
@@ -476,6 +480,7 @@ module dm_csrs #(
           // access while the SBA was busy
           if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
+            resp_queue_inp.resp = dm::DTM_BUSY;
           end else begin
             sbaddr_d[63:32] = dmi_req_i.data;
           end
@@ -484,6 +489,7 @@ module dm_csrs #(
           // access while the SBA was busy
           if (sbbusy_i || sbcs_q.sbbusyerror) begin
            sbcs_d.sbbusyerror = 1'b1;
+           resp_queue_inp.resp = dm::DTM_BUSY;
           end else begin
             sbdata_d[31:0] = dmi_req_i.data;
             sbdata_write_valid_o = (sbcs_q.sberror == '0);
@@ -493,6 +499,7 @@ module dm_csrs #(
           // access while the SBA was busy
           if (sbbusy_i || sbcs_q.sbbusyerror) begin
            sbcs_d.sbbusyerror = 1'b1;
+           resp_queue_inp.resp = dm::DTM_BUSY;
           end else begin
             sbdata_d[63:32] = dmi_req_i.data;
           end
