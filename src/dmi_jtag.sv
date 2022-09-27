@@ -177,7 +177,12 @@ module dmi_jtag #(
         WaitReadValid: begin
           // load data into register and shift out
           if (dmi_resp_valid) begin
-            data_d = dmi_resp.data;
+            unique case (dmi_resp.resp)
+              dm::DTM_SUCCESS: data_d = dmi_resp.data;
+              dm::DTM_ERR:     data_d = 32'hDEAD_BEEF;
+              dm::DTM_BUSY:    data_d = 32'hB051_B051;
+              default:         data_d = 32'hBAAD_C0DE;
+            endcase
             state_d = Idle;
           end
         end
