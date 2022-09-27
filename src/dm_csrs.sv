@@ -90,7 +90,6 @@ module dm_csrs #(
   logic        resp_queue_empty;
   logic        resp_queue_push;
   logic        resp_queue_pop;
-  logic [31:0] resp_queue_data;
 
   localparam dm::dm_csr_e DataEnd = dm::dm_csr_e'(dm::Data0 + {4'h0, dm::DataCount} - 8'h1);
   localparam dm::dm_csr_e ProgBufEnd = dm::dm_csr_e'(dm::ProgBuf0 + {4'h0, dm::ProgBufSize} - 8'h1);
@@ -179,8 +178,8 @@ module dm_csrs #(
 
   logic [HartSelLen-1:0] selected_hart;
 
-  // a successful response returns zero
-  assign dmi_resp_o.resp = dm::DTM_SUCCESS;
+  dm::dmi_resp_t resp_queue_inp;
+
   assign dmi_resp_valid_o     = ~resp_queue_empty;
   assign dmi_req_ready_o      = ~resp_queue_full;
   assign resp_queue_push      = dmi_req_valid_i & dmi_req_ready_o;
@@ -279,7 +278,8 @@ module dm_csrs #(
     sbaddr_d            = 64'(sbaddress_i);
     sbdata_d            = sbdata_q;
 
-    resp_queue_data         = 32'h0;
+    resp_queue_inp.data     = 32'h0;
+    resp_queue_inp.resp     = dm::DTM_SUCCESS;
     cmd_valid_d             = 1'b0;
     sbaddress_write_valid_o = 1'b0;
     sbdata_read_valid_o     = 1'b0;
@@ -294,7 +294,7 @@ module dm_csrs #(
     if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) begin
       unique case (dm_csr_addr) inside
         [(dm::Data0):DataEnd]: begin
-          resp_queue_data = data_q[$clog2(dm::DataCount)'(autoexecdata_idx)];
+          resp_queue_inp.data = data_q[$clog2(dm::DataCount)'(autoexecdata_idx)];
           if (!cmdbusy_i) begin
             // check whether we need to re-execute the command (just give a cmd_valid)
             cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
@@ -303,15 +303,15 @@ module dm_csrs #(
             cmderr_d = dm::CmdErrBusy;
           end
         end
-        dm::DMControl:    resp_queue_data = dmcontrol_q;
-        dm::DMStatus:     resp_queue_data = dmstatus;
-        dm::Hartinfo:     resp_queue_data = hartinfo_aligned[selected_hart];
-        dm::AbstractCS:   resp_queue_data = abstractcs;
-        dm::AbstractAuto: resp_queue_data = abstractauto_q;
+        dm::DMControl:    resp_queue_inp.data = dmcontrol_q;
+        dm::DMStatus:     resp_queue_inp.data = dmstatus;
+        dm::Hartinfo:     resp_queue_inp.data = hartinfo_aligned[selected_hart];
+        dm::AbstractCS:   resp_queue_inp.data = abstractcs;
+        dm::AbstractAuto: resp_queue_inp.data = abstractauto_q;
         // command is read-only
-        dm::Command:    resp_queue_data = '0;
+        dm::Command:    resp_queue_inp.data = '0;
         [(dm::ProgBuf0):ProgBufEnd]: begin
-          resp_queue_data = progbuf_q[dmi_req_i.addr[$clog2(dm::ProgBufSize)-1:0]];
+          resp_queue_inp.data = progbuf_q[dmi_req_i.addr[$clog2(dm::ProgBufSize)-1:0]];
           if (!cmdbusy_i) begin
             // check whether we need to re-execute the command (just give a cmd_valid)
             // range of autoexecprogbuf is 31:16
@@ -322,18 +322,18 @@ module dm_csrs #(
             cmderr_d = dm::CmdErrBusy;
           end
         end
-        dm::HaltSum0: resp_queue_data = haltsum0;
-        dm::HaltSum1: resp_queue_data = haltsum1;
-        dm::HaltSum2: resp_queue_data = haltsum2;
-        dm::HaltSum3: resp_queue_data = haltsum3;
+        dm::HaltSum0: resp_queue_inp.data = haltsum0;
+        dm::HaltSum1: resp_queue_inp.data = haltsum1;
+        dm::HaltSum2: resp_queue_inp.data = haltsum2;
+        dm::HaltSum3: resp_queue_inp.data = haltsum3;
         dm::SBCS: begin
-          resp_queue_data = sbcs_q;
+          resp_queue_inp.data = sbcs_q;
         end
         dm::SBAddress0: begin
-          resp_queue_data = sbaddr_q[31:0];
+          resp_queue_inp.data = sbaddr_q[31:0];
         end
         dm::SBAddress1: begin
-          resp_queue_data = sbaddr_q[63:32];
+          resp_queue_inp.data = sbaddr_q[63:32];
         end
         dm::SBData0: begin
           // access while the SBA was busy
@@ -341,7 +341,7 @@ module dm_csrs #(
             sbcs_d.sbbusyerror = 1'b1;
           end else begin
             sbdata_read_valid_o = (sbcs_q.sberror == '0);
-            resp_queue_data = sbdata_q[31:0];
+            resp_queue_inp.data = sbdata_q[31:0];
           end
         end
         dm::SBData1: begin
@@ -349,7 +349,7 @@ module dm_csrs #(
           if (sbbusy_i || sbcs_q.sbbusyerror) begin
             sbcs_d.sbbusyerror = 1'b1;
           end else begin
-            resp_queue_data = sbdata_q[63:32];
+            resp_queue_inp.data = sbdata_q[63:32];
           end
         end
         default:;
@@ -557,8 +557,8 @@ module dm_csrs #(
 
   // response FIFO
   fifo_v2 #(
-    .dtype            ( logic [31:0]         ),
-    .DEPTH            ( 2                    )
+    .dtype            ( logic [$bits(dmi_resp_o)-1:0] ),
+    .DEPTH            ( 2                             )
   ) i_fifo (
     .clk_i,
     .rst_ni,
@@ -569,9 +569,9 @@ module dm_csrs #(
     .empty_o          ( resp_queue_empty     ),
     .alm_full_o       (                      ),
     .alm_empty_o      (                      ),
-    .data_i           ( resp_queue_data      ),
+    .data_i           ( resp_queue_inp       ),
     .push_i           ( resp_queue_push      ),
-    .data_o           ( dmi_resp_o.data      ),
+    .data_o           ( dmi_resp_o           ),
     .pop_i            ( resp_queue_pop       )
   );
 
