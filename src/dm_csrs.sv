@@ -299,8 +299,11 @@ module dm_csrs #(
             // check whether we need to re-execute the command (just give a cmd_valid)
             cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
           // An abstract command was executing while one of the data registers was read
-          end else if (cmderr_q == dm::CmdErrNone) begin
-            cmderr_d = dm::CmdErrBusy;
+          end else begin
+            resp_queue_inp.resp = dm::DTM_BUSY;
+            if (cmderr_q == dm::CmdErrNone) begin
+              cmderr_d = dm::CmdErrBusy;
+            end
           end
         end
         dm::DMControl:    resp_queue_inp.data = dmcontrol_q;
@@ -318,8 +321,11 @@ module dm_csrs #(
             cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
 
           // An abstract command was executing while one of the progbuf registers was read
-          end else if (cmderr_q == dm::CmdErrNone) begin
-            cmderr_d = dm::CmdErrBusy;
+          end else begin
+            resp_queue_inp.resp = dm::DTM_BUSY;
+            if (cmderr_q == dm::CmdErrNone) begin
+              cmderr_d = dm::CmdErrBusy;
+            end
           end
         end
         dm::HaltSum0: resp_queue_inp.data = haltsum0;
@@ -367,8 +373,11 @@ module dm_csrs #(
               // check whether we need to re-execute the command (just give a cmd_valid)
               cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
             //An abstract command was executing while one of the data registers was written
-            end else if (cmderr_q == dm::CmdErrNone) begin
-              cmderr_d = dm::CmdErrBusy;
+            end else begin
+              resp_queue_inp.resp = dm::DTM_BUSY;
+              if (cmderr_q == dm::CmdErrNone) begin
+                cmderr_d = dm::CmdErrBusy;
+              end
             end
           end
         end
@@ -391,8 +400,11 @@ module dm_csrs #(
           // reads during abstract command execution are not allowed
           if (!cmdbusy_i) begin
             cmderr_d = dm::cmderr_e'(~a_abstractcs.cmderr & cmderr_q);
-          end else if (cmderr_q == dm::CmdErrNone) begin
-            cmderr_d = dm::CmdErrBusy;
+          end else begin
+            resp_queue_inp.resp = dm::DTM_BUSY;
+            if (cmderr_q == dm::CmdErrNone) begin
+              cmderr_d = dm::CmdErrBusy;
+            end
           end
         end
         dm::Command: begin
@@ -402,8 +414,11 @@ module dm_csrs #(
             command_d = dm::command_t'(dmi_req_i.data);
           // if there was an attempted to write during a busy execution
           // and the cmderror field is zero set the busy error
-          end else if (cmderr_q == dm::CmdErrNone) begin
-            cmderr_d = dm::CmdErrBusy;
+          end else begin
+            resp_queue_inp.resp = dm::DTM_BUSY;
+            if (cmderr_q == dm::CmdErrNone) begin
+              cmderr_d = dm::CmdErrBusy;
+            end
           end
         end
         dm::AbstractAuto: begin
@@ -412,8 +427,11 @@ module dm_csrs #(
             abstractauto_d                 = 32'h0;
             abstractauto_d.autoexecdata    = 12'(dmi_req_i.data[dm::DataCount-1:0]);
             abstractauto_d.autoexecprogbuf = 16'(dmi_req_i.data[dm::ProgBufSize-1+16:16]);
-          end else if (cmderr_q == dm::CmdErrNone) begin
-            cmderr_d = dm::CmdErrBusy;
+          end else begin
+            resp_queue_inp.resp = dm::DTM_BUSY;
+            if (cmderr_q == dm::CmdErrNone) begin
+              cmderr_d = dm::CmdErrBusy;
+            end
           end
         end
         [(dm::ProgBuf0):ProgBufEnd]: begin
@@ -426,8 +444,11 @@ module dm_csrs #(
             // range of autoexecprogbuf is 31:16
             cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
           //An abstract command was executing while one of the progbuf registers was written
-          end else if (cmderr_q == dm::CmdErrNone) begin
-            cmderr_d = dm::CmdErrBusy;
+          end else begin
+            resp_queue_inp.resp = dm::DTM_BUSY;
+            if (cmderr_q == dm::CmdErrNone) begin
+              cmderr_d = dm::CmdErrBusy;
+            end
           end
         end
         dm::SBCS: begin
