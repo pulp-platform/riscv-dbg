@@ -26,6 +26,7 @@ module dm_mem #(
   input  logic                             rst_ni,      // debug module reset
 
   output logic [NrHarts-1:0]               debug_req_o,
+  input  logic                             ndmreset_i,
   input  logic [19:0]                      hartsel_i,
   // from Ctrl and Status register
   input  logic [NrHarts-1:0]               haltreq_i,
@@ -201,6 +202,13 @@ module dm_mem #(
       cmderror_valid_o = 1'b1;
       cmderror_o = dm::CmdErrorException;
     end
+
+    if (ndmreset_i) begin
+      // Clear state of hart and its control signals when it is being reset.
+      state_d = Idle;
+      go      = 1'b0;
+      resume  = 1'b0;
+    end
   end
 
   // word mux for 32bit and 64bit buses
@@ -330,6 +338,12 @@ module dm_mem #(
           default: ;
         endcase
       end
+    end
+
+    if (ndmreset_i) begin
+      // When harts are reset, they are neither halted nor resuming.
+      halted_d_aligned   = '0;
+      resuming_d_aligned = '0;
     end
 
     data_o = data_bits;
