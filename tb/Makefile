@@ -20,7 +20,7 @@ MAKE			= make
 CTAGS			= ctags
 
 # vsim configuration
-VVERSION                = "10.7b"
+VVERSION		= "10.7b"
 
 VLIB			= vlib-$(VVERSION)
 VWORK			= work
@@ -33,26 +33,26 @@ VOPT			= vopt-$(VVERSION)
 VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors #=mnprft
 
 VSIM			= vsim-$(VVERSION)
-VSIM_HOME               = /usr/pack/modelsim-$(VVERSION)-kgf/questasim
-VSIM_FLAGS              =  # user defined
+VSIM_HOME		= /usr/pack/modelsim-$(VVERSION)-kgf/questasim
+VSIM_FLAGS		=  # user defined
 ALL_VSIM_FLAGS		= $(VSIM_FLAGS) -sv_lib remote_bitbang/librbs_vsim
 VSIM_DEBUG_FLAGS	= -debugdb
-VSIM_GUI_FLAGS          = -gui -debugdb
-VSIM_SCRIPT_BATCH       = vsim_batch.tcl
-VSIM_SCRIPT_GUI         = vsim_gui.tcl
+VSIM_GUI_FLAGS		= -gui -debugdb
+VSIM_SCRIPT_BATCH	= vsim_batch.tcl
+VSIM_SCRIPT_GUI	= vsim_gui.tcl
 
-VCS                     = vcs-2017.03-kgf vcs
-VCS_HOME                = /usr/pack/vcs-2017.03-kgf
-VCS_FLAGS               =
-SIMV_FLAGS              =
+VCS			= vcs-2017.03-kgf vcs
+VCS_HOME		= /usr/pack/vcs-2017.03-kgf
+VCS_FLAGS		=
+SIMV_FLAGS		=
 
 # verilator configuration
 VERILATOR		= verilator
-VERI_FLAGS              =
-VERI_COMPILE_FLAGS      =
-VERI_TRACE              =
-VERI_DIR                = cobj_dir
-VERI_CFLAGS             = -O2
+VERI_FLAGS		=
+VERI_COMPILE_FLAGS	=
+VERI_TRACE		=
+VERI_DIR		= cobj_dir
+VERI_CFLAGS		= -O2
 
 # RTL source files
 RTLSRC_TB_PKG		:=
@@ -67,13 +67,13 @@ RTLSRC_TB		:= boot_rom.sv \
 				tb_test_env.sv \
 				tb_top.sv
 
-RTLSRC_VERI_TB          := boot_rom.sv \
+RTLSRC_VERI_TB		:= boot_rom.sv \
 				dp_ram.sv \
 				mm_ram.sv \
 				SimJTAG.sv \
 				tb_top_verilator.sv
 
-RTLSRC_INCDIR           := riscv/rtl/include common_cells/include
+RTLSRC_INCDIR		:= riscv/rtl/include common_cells/include
 
 RTLSRC_FPNEW_PKG	:= fpnew/src/fpnew_pkg.sv
 RTLSRC_RISCV_PKG	+= $(addprefix riscv/rtl/include/,\
@@ -83,7 +83,7 @@ RTLSRC_DM_PKG		+= ../src/dm_pkg.sv
 
 RTLSRC_COMMON_PKG	:= common_cells/src/cdc_reset_ctrlr_pkg.sv
 
-RTLSRC_PKG 		= $(RTLSRC_FPNEW_PKG) dm_tb_pkg.sv $(RTLSRC_RISCV_PKG) \
+RTLSRC_PKG		= $(RTLSRC_FPNEW_PKG) dm_tb_pkg.sv $(RTLSRC_RISCV_PKG) \
 			$(RTLSRC_DM_PKG) $(RTLSRC_COMMON_PKG)
 RTLSRC_RISCV		:= $(addprefix riscv/rtl/,\
 				../bhv/cv32e40p_sim_clock_gate.sv \
@@ -128,12 +128,12 @@ RTLSRC_DEBUG		+= $(addprefix ../src/,\
 RTLSRC			+= $(RTLSRC_RISCV) $(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
 
 # versions for this tb
-CV32E40P_SHA            = f9d63290eea738cb0a6fbf1e77bbd18555015a03
-FPU_SHA                 = v0.6.1
-COMMON_SHA              = v1.24.0
-TECH_SHA                = v0.2.3
+CV32E40P_SHA		= f9d63290eea738cb0a6fbf1e77bbd18555015a03
+FPU_SHA		= v0.6.1
+COMMON_SHA		= v1.24.0
+TECH_SHA		= v0.2.3
 
-RAM_START_ADDR          = 0x1c000000
+RAM_START_ADDR		= 0x1c000000
 
 # TODO: clean this up
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
