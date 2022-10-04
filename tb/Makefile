@@ -301,6 +301,13 @@ veri-run: verilate prog/test.hex
 	./testbench_verilator $(VERI_FLAGS) \
 		"+firmware=prog/test.hex"
 
+# run openocd testbench
+# Use OPENOCD to point to openocd binary
+# Use OPENOCD_SCRIPT to point to test script
+.PHONY: test-openocd
+test-openocd:
+	./veri-run-openocd.py
+
 .PHONY: vsim-run
 vsim-run: vsim-all prog/test.hex
 vsim-run: ALL_VSIM_FLAGS += "+firmware=prog/test.hex"
