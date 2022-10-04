@@ -113,6 +113,7 @@ RTLSRC_RISCV		:= $(addprefix riscv/rtl/,\
 				cv32e40p_sleep_unit.sv \
 				cv32e40p_core.sv)
 RTLSRC_COMMON		:= $(addprefix common_cells/src/,\
+				spill_register_flushable.sv spill_register.sv \
 				cdc_2phase.sv cdc_2phase_clearable.sv \
 				cdc_reset_ctrlr.sv cdc_4phase.sv \
 				deprecated/fifo_v2.sv fifo_v3.sv \
@@ -176,7 +177,7 @@ vsim-all: .opt-rtl
 
 vcsify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) remote_bitbang/librbs_vcs.so
 	$(VCS) +vc -sverilog -race=all -ignore unique_checks -full64 \
-		-timescale=1ns/1ps \
+		-timescale=1ns/1ps -assert svaext \
 		-CC "-I$(VCS_HOME)/include -O3 -march=native" $(VCS_FLAGS) \
 		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
 		$(addprefix +incdir+,$(RTLSRC_INCDIR))
