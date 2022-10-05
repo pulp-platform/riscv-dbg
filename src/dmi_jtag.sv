@@ -134,9 +134,11 @@ module dmi_jtag #(
   assign dmi_resp_ready = 1'b1;
 
   logic error_dmi_busy;
+  logic error_dmi_op_failed;
 
   always_comb begin : p_fsm
     error_dmi_busy = 1'b0;
+    error_dmi_op_failed = 1'b0;
     // default assignments
     state_d   = state_q;
     address_d = address_q;
@@ -226,6 +228,11 @@ module dmi_jtag #(
       if (error_dmi_busy && error_q == DMINoError) begin
         error_d = DMIBusy;
       end
+
+      if (error_dmi_op_failed && error_q == DMINoError) begin
+        error_d = DMIOPFailed;
+      end
+
       // clear sticky error flag
       if (update && dtmcs_q.dmireset && dtmcs_select) begin
         error_d = DMINoError;
