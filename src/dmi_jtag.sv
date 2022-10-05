@@ -223,7 +223,7 @@ module dmi_jtag #(
         error_dmi_busy = 1'b1;
       end
 
-      if (error_dmi_busy) begin
+      if (error_dmi_busy && error_q == DMINoError) begin
         error_d = DMIBusy;
       end
       // clear sticky error flag
