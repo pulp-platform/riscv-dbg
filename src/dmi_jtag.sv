@@ -180,10 +180,20 @@ module dmi_jtag #(
           // load data into register and shift out
           if (dmi_resp_valid) begin
             unique case (dmi_resp.resp)
-              dm::DTM_SUCCESS: data_d = dmi_resp.data;
-              dm::DTM_ERR:     data_d = 32'hDEAD_BEEF;
-              dm::DTM_BUSY:    data_d = 32'hB051_B051;
-              default:         data_d = 32'hBAAD_C0DE;
+              dm::DTM_SUCCESS: begin
+                data_d = dmi_resp.data;
+              end
+              dm::DTM_ERR: begin
+                data_d = 32'hDEAD_BEEF;
+                error_dmi_op_failed = 1'b1;
+              end
+              dm::DTM_BUSY: begin
+                data_d = 32'hB051_B051;
+                error_dmi_busy = 1'b1;
+              end
+              default: begin
+                data_d = 32'hBAAD_C0DE;
+              end
             endcase
             state_d = Idle;
           end
@@ -200,6 +210,11 @@ module dmi_jtag #(
         WaitWriteValid: begin
           // got a valid answer go back to idle
           if (dmi_resp_valid) begin
+            unique case (dmi_resp.resp)
+              dm::DTM_ERR: error_dmi_op_failed = 1'b1;
+              dm::DTM_BUSY: error_dmi_busy = 1'b1;
+              default: ;
+            endcase
             state_d = Idle;
           end
         end
