@@ -204,7 +204,7 @@ verilate: testbench_verilator
 testbench_verilator: $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC) \
 			remote_bitbang/librbs_veri.so
 	$(VERILATOR) --cc --sv --exe $(VERI_TRACE) \
-		--Wno-lint --Wno-UNOPTFLAT --Wno-BLKANDNBLK \
+		--Wno-lint --Wno-UNOPTFLAT --Wno-BLKANDNBLK --Wno-COMBDLY \
 		--Wno-MODDUP $(addprefix +incdir+,$(RTLSRC_INCDIR)) --top-module \
 		tb_top_verilator --Mdir $(VERI_DIR) \
 		-CFLAGS "-std=gnu++11 $(VERI_CFLAGS)" $(VERI_COMPILE_FLAGS) \
