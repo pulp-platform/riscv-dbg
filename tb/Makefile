@@ -16,33 +16,36 @@
 # Author: Robert Balas (balasr@iis.ee.ethz.ch)
 # Description: All in one. Uses parts of picorv32's makefile.
 
+# minimum tool versions supported
+MIN_VSIM_VERSION	= "questa-2020.1"
+MIN_VCS_VERSION		= "vcs-2020.12"
+
 MAKE			= make
 CTAGS			= ctags
 
 # vsim configuration
-VVERSION		= "10.7b"
 
-VLIB			= vlib-$(VVERSION)
+VLIB			= vlib
 VWORK			= work
 
-VLOG			= vlog-$(VVERSION)
+VLOG			= vlog
 VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583
-VLOG_LOG                = vloggy
+VLOG_LOG		= vloggy
 
-VOPT			= vopt-$(VVERSION)
+VOPT			= vopt
 VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors #=mnprft
 
-VSIM			= vsim-$(VVERSION)
-VSIM_HOME		= /usr/pack/modelsim-$(VVERSION)-kgf/questasim
+VSIM			= vsim
+VSIM_HOME		=
 VSIM_FLAGS		=  # user defined
 ALL_VSIM_FLAGS		= $(VSIM_FLAGS) -sv_lib remote_bitbang/librbs_vsim
 VSIM_DEBUG_FLAGS	= -debugdb
 VSIM_GUI_FLAGS		= -gui -debugdb
 VSIM_SCRIPT_BATCH	= vsim_batch.tcl
-VSIM_SCRIPT_GUI	= vsim_gui.tcl
+VSIM_SCRIPT_GUI		= vsim_gui.tcl
 
-VCS			= vcs-2017.03-kgf vcs
-VCS_HOME		= /usr/pack/vcs-2017.03-kgf
+VCS			= vcs
+VCS_HOME		=
 VCS_FLAGS		=
 SIMV_FLAGS		=
 
