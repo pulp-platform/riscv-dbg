@@ -78,9 +78,9 @@ module dm_mem #(
   localparam logic [DbgAddressBits-1:0] FlagsEndAddr  = 'h7FF;
 
   localparam logic [DbgAddressBits-1:0] HaltedAddr    = 'h100;
-  localparam logic [DbgAddressBits-1:0] GoingAddr     = 'h104;
-  localparam logic [DbgAddressBits-1:0] ResumingAddr  = 'h108;
-  localparam logic [DbgAddressBits-1:0] ExceptionAddr = 'h10C;
+  localparam logic [DbgAddressBits-1:0] GoingAddr     = 'h108;
+  localparam logic [DbgAddressBits-1:0] ResumingAddr  = 'h110;
+  localparam logic [DbgAddressBits-1:0] ExceptionAddr = 'h118;
 
   logic [dm::ProgBufSize/2-1:0][63:0]   progbuf;
   logic [7:0][63:0]   abstract_cmd;
