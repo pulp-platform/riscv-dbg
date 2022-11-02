@@ -181,7 +181,7 @@ vsim-all: .opt-rtl
 vcsify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) remote_bitbang/librbs_vcs.so
 	$(VCS) +vc -sverilog -race=all -ignore unique_checks -full64 \
 		-timescale=1ns/1ps -assert svaext \
-		-CC "-I$(VCS_HOME)/include -O3 -march=native" $(VCS_FLAGS) \
+		-CC "$(if $(VCS_HOME),-I$(VCS_HOME)/include,) -O3 -march=native" $(VCS_FLAGS) \
 		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
 		$(addprefix +incdir+,$(RTLSRC_INCDIR))
 
@@ -241,19 +241,19 @@ $(RTLSRC_RISCV_PKG) $(RTLSRC_RISCV):
 	cd riscv/ && git checkout $(CV32E40P_SHA)
 
 # openocd server
-remote_bitbang/librbs_veri.so: INCLUDE_DIRS =./ $(VSIM_HOME)/include
+remote_bitbang/librbs_veri.so: INCLUDE_DIRS =./
 remote_bitbang/librbs_veri.so:
 	$(MAKE) -C remote_bitbang all
 	mv remote_bitbang/librbs.so $@
 
-remote_bitbang/librbs_vsim.so: INCLUDE_DIRS =./ $(VSIM_HOME)/include
 remote_bitbang/librbs_vsim.so:
-	$(MAKE) -C remote_bitbang all
+remote_bitbang/librbs_vsim.so:
+	$(MAKE) -C remote_bitbang all INCLUDE_DIRS="./ $(if $(VSIM_HOME),$(VSIM_HOME)/include,)"
 	mv remote_bitbang/librbs.so $@
 
-remote_bitbang/librbs_vcs.so: INCLUDE_DIRS =./ $(VCS_HOME)/include
 remote_bitbang/librbs_vcs.so:
-	$(MAKE) -C remote_bitbang all
+remote_bitbang/librbs_vcs.so:
+	$(MAKE) -C remote_bitbang all INCLUDE_DIRS="./ $(if $(VCS_HOME),$(VCS_HOME)/include,)"
 	mv remote_bitbang/librbs.so $@
 
 rbs-clean:
