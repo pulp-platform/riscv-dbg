@@ -249,7 +249,7 @@ module dm_mem #(
     if (req_i) begin
       // this is a write
       if (we_i) begin
-        unique case (addr) inside
+        unique case (addr)
           HaltedAddr: begin
             halted_aligned[wdata_hartsel] = 1'b1;
             halted_d_aligned[wdata_hartsel] = 1'b1;
@@ -266,30 +266,36 @@ module dm_mem #(
           // an exception occurred during execution
           ExceptionAddr: exception = 1'b1;
           // core can write data registers
-          [DataBaseAddr:DataEndAddr]: begin
-            data_valid_o = 1'b1;
-            for (int dc = 0; dc < dm::DataCount; dc++) begin
-              if ((addr_i[DbgAddressBits-1:2] - DataBaseAddr[DbgAddressBits-1:2]) == dc) begin
-                for (int i = 0; i < $bits(be_i); i++) begin
-                  if (be_i[i]) begin
-                    if (i>3) begin // for upper 32bit data write (only used for BusWidth ==  64)
-                      if ((dc+1) < dm::DataCount) begin // ensure we write to an implemented data register
-                        data_bits[dc+1][(i-4)*8+:8] = wdata_i[i*8+:8];
+          default: begin
+            // Handle ranges of addresses in the default statement instead of with range clauses
+            // (`[:]`) in a `unique case inside` construct.  The reason is that not all tools
+            // support ranges in `case inside` constructs.
+            unique if (addr >= DataBaseAddr && addr <= DataEndAddr) begin
+              data_valid_o = 1'b1;
+              for (int dc = 0; dc < dm::DataCount; dc++) begin
+                if ((addr_i[DbgAddressBits-1:2] - DataBaseAddr[DbgAddressBits-1:2]) == dc) begin
+                  for (int i = 0; i < $bits(be_i); i++) begin
+                    if (be_i[i]) begin
+                      if (i>3) begin // for upper 32bit data write (only used for BusWidth ==  64)
+                        if ((dc+1) < dm::DataCount) begin // ensure we write to an implemented data register
+                          data_bits[dc+1][(i-4)*8+:8] = wdata_i[i*8+:8];
+                        end
+                      end else begin // for lower 32bit data write
+                        data_bits[dc][i*8+:8] = wdata_i[i*8+:8];
                       end
-                    end else begin // for lower 32bit data write
-                      data_bits[dc][i*8+:8] = wdata_i[i*8+:8];
                     end
                   end
                 end
               end
+            end else begin
+              // Workaround for `unique0 if` not being supported in some commercial simulators.
             end
           end
-          default ;
         endcase
 
       // this is a read
       end else begin
-        unique case (addr) inside
+        unique case (addr)
           // variable ROM content
           WhereToAddr: begin
             // variable jump to abstract cmd, program_buffer or resume
@@ -311,34 +317,35 @@ module dm_mem #(
             end
           end
 
-          [DataBaseAddr:DataEndAddr]: begin
-            rdata_d = {
-                      data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3]) << 1) + 1'b1)],
-                      data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3]) << 1))]
-                      };
-          end
-
-          [ProgBufBaseAddr:ProgBufEndAddr]: begin
-            rdata_d = progbuf[$clog2(dm::ProgBufSize)'(addr_i[DbgAddressBits-1:3] -
-                          ProgBufBaseAddr[DbgAddressBits-1:3])];
-          end
-
-          // two slots for abstract command
-          [AbstractCmdBaseAddr:AbstractCmdEndAddr]: begin
-            // return the correct address index
-            rdata_d = abstract_cmd[3'(addr_i[DbgAddressBits-1:3] -
-                           AbstractCmdBaseAddr[DbgAddressBits-1:3])];
-          end
-          // harts are polling for flags here
-          [FlagsBaseAddr:FlagsEndAddr]: begin
-            // release the corresponding hart
-            if (({addr_i[DbgAddressBits-1:3], 3'b0} - FlagsBaseAddr[DbgAddressBits-1:0]) ==
-              (DbgAddressBits'(hartsel) & {{(DbgAddressBits-3){1'b1}}, 3'b0})) begin
-              rdata[DbgAddressBits'(hartsel) & DbgAddressBits'(3'b111)] = {6'b0, resume, go};
+          default: begin
+            // Handle ranges of addresses in the default statement instead of with range clauses
+            // (`[:]`) in a `unique case inside` construct.  The reason is that not all tools
+            // support ranges in `case inside` constructs.
+            unique if (addr >= DataBaseAddr && addr <= DataEndAddr) begin
+              rdata_d = {
+                        data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3]) << 1) + 1'b1)],
+                        data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3]) << 1))]
+                        };
+            end else if (addr >= ProgBufBaseAddr && addr <= ProgBufEndAddr) begin
+              rdata_d = progbuf[$clog2(dm::ProgBufSize)'(addr_i[DbgAddressBits-1:3] -
+                            ProgBufBaseAddr[DbgAddressBits-1:3])];
+            end else if (addr >= AbstractCmdBaseAddr && addr <= AbstractCmdEndAddr) begin
+              // two slots for abstract command
+              // return the correct address index
+              rdata_d = abstract_cmd[3'(addr_i[DbgAddressBits-1:3] -
+                             AbstractCmdBaseAddr[DbgAddressBits-1:3])];
+            end else if (addr >= FlagsBaseAddr && addr <= FlagsEndAddr) begin
+              // harts are polling for flags here
+              // release the corresponding hart
+              if (({addr_i[DbgAddressBits-1:3], 3'b0} - FlagsBaseAddr[DbgAddressBits-1:0]) ==
+                (DbgAddressBits'(hartsel) & {{(DbgAddressBits-3){1'b1}}, 3'b0})) begin
+                rdata[DbgAddressBits'(hartsel) & DbgAddressBits'(3'b111)] = {6'b0, resume, go};
+              end
+              rdata_d = rdata;
+            end else begin
+              // Workaround for `unique0 if` not being supported in some commercial simulators.
             end
-            rdata_d = rdata;
           end
-          default: ;
         endcase
       end
     end

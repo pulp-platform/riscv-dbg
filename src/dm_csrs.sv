@@ -292,20 +292,7 @@ module dm_csrs #(
 
     // reads
     if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_READ) begin
-      unique case (dm_csr_addr) inside
-        [(dm::Data0):DataEnd]: begin
-          resp_queue_inp.data = data_q[$clog2(dm::DataCount)'(autoexecdata_idx)];
-          if (!cmdbusy_i) begin
-            // check whether we need to re-execute the command (just give a cmd_valid)
-            cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
-          // An abstract command was executing while one of the data registers was read
-          end else begin
-            resp_queue_inp.resp = dm::DTM_BUSY;
-            if (cmderr_q == dm::CmdErrNone) begin
-              cmderr_d = dm::CmdErrBusy;
-            end
-          end
-        end
+      unique case (dm_csr_addr)
         dm::DMControl:    resp_queue_inp.data = dmcontrol_q;
         dm::DMStatus:     resp_queue_inp.data = dmstatus;
         dm::Hartinfo:     resp_queue_inp.data = hartinfo_aligned[selected_hart];
@@ -313,21 +300,6 @@ module dm_csrs #(
         dm::AbstractAuto: resp_queue_inp.data = abstractauto_q;
         // command is read-only
         dm::Command:    resp_queue_inp.data = '0;
-        [(dm::ProgBuf0):ProgBufEnd]: begin
-          resp_queue_inp.data = progbuf_q[dmi_req_i.addr[$clog2(dm::ProgBufSize)-1:0]];
-          if (!cmdbusy_i) begin
-            // check whether we need to re-execute the command (just give a cmd_valid)
-            // range of autoexecprogbuf is 31:16
-            cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
-
-          // An abstract command was executing while one of the progbuf registers was read
-          end else begin
-            resp_queue_inp.resp = dm::DTM_BUSY;
-            if (cmderr_q == dm::CmdErrNone) begin
-              cmderr_d = dm::CmdErrBusy;
-            end
-          end
-        end
         dm::HaltSum0: resp_queue_inp.data = haltsum0;
         dm::HaltSum1: resp_queue_inp.data = haltsum1;
         dm::HaltSum2: resp_queue_inp.data = haltsum2;
@@ -360,29 +332,46 @@ module dm_csrs #(
             resp_queue_inp.data = sbdata_q[63:32];
           end
         end
-        default:;
-      endcase
-    end
-
-    // write
-    if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_WRITE) begin
-      unique case (dm_csr_addr) inside
-        [(dm::Data0):DataEnd]: begin
-          if (dm::DataCount > 0) begin
-            // attempts to write them while busy is set does not change their value
+        default: begin
+          // Handle ranges of addresses in the default statement instead of with range clauses
+          // (`[:]`) in a `unique case inside` construct.  The reason is that not all tools
+          // support ranges in `case inside` constructs.
+          unique if (dm_csr_addr >= dm::Data0 && dm_csr_addr <= DataEnd) begin
+            resp_queue_inp.data = data_q[$clog2(dm::DataCount)'(autoexecdata_idx)];
             if (!cmdbusy_i) begin
-              data_d[dmi_req_i.addr[$clog2(dm::DataCount)-1:0]] = dmi_req_i.data;
               // check whether we need to re-execute the command (just give a cmd_valid)
               cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
-            //An abstract command was executing while one of the data registers was written
+            // An abstract command was executing while one of the data registers was read
             end else begin
               resp_queue_inp.resp = dm::DTM_BUSY;
               if (cmderr_q == dm::CmdErrNone) begin
                 cmderr_d = dm::CmdErrBusy;
               end
             end
+          end else if (dm_csr_addr >= dm::ProgBuf0 && dm_csr_addr <= ProgBufEnd) begin
+            resp_queue_inp.data = progbuf_q[dmi_req_i.addr[$clog2(dm::ProgBufSize)-1:0]];
+            if (!cmdbusy_i) begin
+              // check whether we need to re-execute the command (just give a cmd_valid)
+              // range of autoexecprogbuf is 31:16
+              cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
+
+            // An abstract command was executing while one of the progbuf registers was read
+            end else begin
+              resp_queue_inp.resp = dm::DTM_BUSY;
+              if (cmderr_q == dm::CmdErrNone) begin
+                cmderr_d = dm::CmdErrBusy;
+              end
+            end
+          end else begin
+            // Workaround for `unique0 if` not being supported in some commercial simulators.
           end
         end
+      endcase
+    end
+
+    // write
+    if (dmi_req_ready_o && dmi_req_valid_i && dtm_op == dm::DTM_WRITE) begin
+      unique case (dm_csr_addr)
         dm::DMControl: begin
           dmcontrol_d = dmi_req_i.data;
           // clear the havreset of the selected hart
@@ -429,23 +418,6 @@ module dm_csrs #(
             abstractauto_d                 = 32'h0;
             abstractauto_d.autoexecdata    = 12'(dmi_req_i.data[dm::DataCount-1:0]);
             abstractauto_d.autoexecprogbuf = 16'(dmi_req_i.data[dm::ProgBufSize-1+16:16]);
-          end else begin
-            resp_queue_inp.resp = dm::DTM_BUSY;
-            if (cmderr_q == dm::CmdErrNone) begin
-              cmderr_d = dm::CmdErrBusy;
-            end
-          end
-        end
-        [(dm::ProgBuf0):ProgBufEnd]: begin
-          // attempts to write them while busy is set does not change their value
-          if (!cmdbusy_i) begin
-            progbuf_d[dmi_req_i.addr[$clog2(dm::ProgBufSize)-1:0]] = dmi_req_i.data;
-            // check whether we need to re-execute the command (just give a cmd_valid)
-            // this should probably throw an error if executed during another command
-            // was busy
-            // range of autoexecprogbuf is 31:16
-            cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
-          //An abstract command was executing while one of the progbuf registers was written
           end else begin
             resp_queue_inp.resp = dm::DTM_BUSY;
             if (cmderr_q == dm::CmdErrNone) begin
@@ -504,7 +476,45 @@ module dm_csrs #(
             sbdata_d[63:32] = dmi_req_i.data;
           end
         end
-        default:;
+        default: begin
+          // Handle ranges of addresses in the default statement instead of with range clauses
+          // (`[:]`) in a `unique case inside` construct.  The reason is that not all tools
+          // support ranges in `case inside` constructs.
+          unique if (dm_csr_addr >= dm::Data0 && dm_csr_addr <= DataEnd) begin
+            if (dm::DataCount > 0) begin
+              // attempts to write them while busy is set does not change their value
+              if (!cmdbusy_i) begin
+                data_d[dmi_req_i.addr[$clog2(dm::DataCount)-1:0]] = dmi_req_i.data;
+                // check whether we need to re-execute the command (just give a cmd_valid)
+                cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
+              //An abstract command was executing while one of the data registers was written
+              end else begin
+                resp_queue_inp.resp = dm::DTM_BUSY;
+                if (cmderr_q == dm::CmdErrNone) begin
+                  cmderr_d = dm::CmdErrBusy;
+                end
+              end
+            end
+          end else if (dm_csr_addr >= dm::ProgBuf0 && dm_csr_addr <=ProgBufEnd) begin
+            // attempts to write them while busy is set does not change their value
+            if (!cmdbusy_i) begin
+              progbuf_d[dmi_req_i.addr[$clog2(dm::ProgBufSize)-1:0]] = dmi_req_i.data;
+              // check whether we need to re-execute the command (just give a cmd_valid)
+              // this should probably throw an error if executed during another command
+              // was busy
+              // range of autoexecprogbuf is 31:16
+              cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
+            //An abstract command was executing while one of the progbuf registers was written
+            end else begin
+              resp_queue_inp.resp = dm::DTM_BUSY;
+              if (cmderr_q == dm::CmdErrNone) begin
+                cmderr_d = dm::CmdErrBusy;
+              end
+            end
+          end else begin
+            // Workaround for `unique0 if` not being supported in some commercial simulators.
+          end
+        end
       endcase
     end
     // hart threw a command error and has precedence over bus writes
