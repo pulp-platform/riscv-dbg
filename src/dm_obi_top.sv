@@ -130,6 +130,7 @@ module dm_obi_top #(
   ) i_dm_top (
     .clk_i                   ( clk_i                 ),
     .rst_ni                  ( rst_ni                ),
+    .next_dm_addr_i          ( '0                    ), // Note exposed at the top yet.
     .testmode_i              ( testmode_i            ),
     .ndmreset_o              ( ndmreset_o            ),
     .dmactive_o              ( dmactive_o            ),

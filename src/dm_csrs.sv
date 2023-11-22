@@ -22,6 +22,7 @@ module dm_csrs #(
 ) (
   input  logic                              clk_i,           // Clock
   input  logic                              rst_ni,          // Asynchronous reset active low
+  input  logic [31:0]                       next_dm_addr_i,  // Static next_dm word address.
   input  logic                              testmode_i,
   input  logic                              dmi_rst_ni,      // sync. DTM reset,
                                                              // active-low
@@ -311,8 +312,8 @@ module dm_csrs #(
         dm::Hartinfo:     resp_queue_inp.data = hartinfo_aligned[selected_hart];
         dm::AbstractCS:   resp_queue_inp.data = abstractcs;
         dm::AbstractAuto: resp_queue_inp.data = abstractauto_q;
-        // command is read-only
-        dm::Command:    resp_queue_inp.data = '0;
+        dm::Command:      resp_queue_inp.data = '0;
+        dm::NextDM:       resp_queue_inp.data = next_dm_addr_i;
         [(dm::ProgBuf0):ProgBufEnd]: begin
           resp_queue_inp.data = progbuf_q[dmi_req_i.addr[$clog2(dm::ProgBufSize)-1:0]];
           if (!cmdbusy_i) begin
@@ -423,6 +424,7 @@ module dm_csrs #(
             end
           end
         end
+        dm::NextDM:; // nextdm is R/O
         dm::AbstractAuto: begin
           // this field can only be written legally when there is no command executing
           if (!cmdbusy_i) begin
