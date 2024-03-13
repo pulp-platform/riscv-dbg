@@ -35,6 +35,7 @@ module dm_csrs #(
   output dm::dmi_resp_t                     dmi_resp_o,
   // global ctrl
   output logic                              ndmreset_o,      // non-debug module reset active-high
+  input  logic                              ndmreset_ack_i,  // non-debug module reset ack pulse
   output logic                              dmactive_o,      // 1 -> debug-module is active,
                                                              // 0 -> synchronous re-set
   // hart status
@@ -519,8 +520,8 @@ module dm_csrs #(
       data_d = data_i;
     end
 
-    // set the havereset flag when we did a ndmreset
-    if (ndmreset_o) begin
+    // set the havereset flag when the ndmreset completed
+    if (ndmreset_ack_i) begin
       havereset_d_aligned[NrHarts-1:0] = '1;
     end
     // -------------

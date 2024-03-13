@@ -38,6 +38,7 @@ module dm_top #(
   input  logic [31:0]           next_dm_addr_i,
   input  logic                  testmode_i,
   output logic                  ndmreset_o,  // non-debug module reset
+  input  logic                  ndmreset_ack_i, // non-debug module reset acknowledgement pulse
   output logic                  dmactive_o,  // debug module is active
   output logic [NrHarts-1:0]    debug_req_o, // async debug request
   // communicate whether the hart is unavailable (e.g.: power down)
@@ -130,6 +131,7 @@ module dm_top #(
     .dmi_resp_ready_i,
     .dmi_resp_o,
     .ndmreset_o              ( ndmreset              ),
+    .ndmreset_ack_i          ( ndmreset_ack_i        ),
     .dmactive_o,
     .hartsel_o               ( hartsel               ),
     .hartinfo_i,

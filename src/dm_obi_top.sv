@@ -133,6 +133,7 @@ module dm_obi_top #(
     .next_dm_addr_i          ( '0                    ), // Note exposed at the top yet.
     .testmode_i              ( testmode_i            ),
     .ndmreset_o              ( ndmreset_o            ),
+    .ndmreset_ack_i          ( ndmreset_o            ), // This is currently not exposed yet.
     .dmactive_o              ( dmactive_o            ),
     .debug_req_o             ( debug_req_o           ),
     .unavailable_i           ( unavailable_i         ),
