@@ -552,6 +552,9 @@ module dm_csrs #(
     if (dmcontrol_q.resumereq && resumeack_i) begin
       dmcontrol_d.resumereq = 1'b0;
     end
+    // WARL behavior of hartsel, depending on NrHarts.
+    // If NrHarts = 1 this is just masked to all-zeros.
+    {dmcontrol_d.hartselhi, dmcontrol_d.hartsello} &= (2**$clog2(NrHarts))-1;
     // static values for dcsr
     sbcs_d.sbversion            = 3'd1;
     sbcs_d.sbbusy               = sbbusy_i;
