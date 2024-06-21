@@ -535,8 +535,8 @@ module dm_mem #(
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      halted_q   <= 1'b0;
-      resuming_q <= 1'b0;
+        halted_q   <= '0;
+        resuming_q <= '0;
     end else begin
       halted_q   <= SelectableHarts & halted_d;
       resuming_q <= SelectableHarts & resuming_d;

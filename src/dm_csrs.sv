@@ -550,7 +550,7 @@ module dm_csrs #(
     if (!dmcontrol_q.resumereq && dmcontrol_d.resumereq) begin
       clear_resumeack_o = 1'b1;
     end
-    if (dmcontrol_q.resumereq && resumeack_i) begin
+    if (dmcontrol_q.resumereq && resumeack_i[selected_hart]) begin 
       dmcontrol_d.resumereq = 1'b0;
     end
     // WARL behavior of hartsel, depending on NrHarts.
