@@ -138,13 +138,12 @@ module dm_mem #(
     cmderror_valid_o = 1'b0;
     cmderror_o       = dm::CmdErrNone;
     state_d          = state_q;
-    go               = 1'b0;
-    resume           = 1'b0;
-    cmdbusy_o        = 1'b1;
 
     unique case (state_q)
       Idle: begin
         cmdbusy_o = 1'b0;
+        go        = 1'b0;
+        resume    = 1'b0;
         if (cmd_valid_i && halted_q_aligned[hartsel] && !unsupported_command) begin
           // give the go signal
           state_d = Go;
@@ -165,6 +164,7 @@ module dm_mem #(
         // we are already busy here since we scheduled the execution of a program
         cmdbusy_o = 1'b1;
         go        = 1'b1;
+        resume    = 1'b0;
         // the thread is now executing the command, track its state
         if (going) begin
             state_d = CmdExecuting;
@@ -173,7 +173,8 @@ module dm_mem #(
 
       Resume: begin
         cmdbusy_o = 1'b1;
-        resume = 1'b1;
+        go        = 1'b0;
+        resume    = 1'b1;
         if (resuming_q_aligned[hartsel]) begin
           state_d = Idle;
         end
@@ -182,13 +183,18 @@ module dm_mem #(
       CmdExecuting: begin
         cmdbusy_o = 1'b1;
         go        = 1'b0;
+        resume    = 1'b0;
         // wait until the hart has halted again
         if (halted_aligned[hartsel]) begin
           state_d = Idle;
         end
       end
 
-      default: ;
+      default: begin
+        cmdbusy_o = 1'b1;
+        go        = 1'b0;
+        resume    = 1'b0;
+      end
     endcase
 
     // only signal once that cmd is unsupported so that we can clear cmderr
