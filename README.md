@@ -30,6 +30,9 @@ These are not implemented (yet)
 * Accessing memory using abstract commands
 * Authentication
 
+## Limitations
+* The JTAG clock frequency needs to be lower than the system's clock frequency (see also https://github.com/pulp-platform/riscv-dbg/issues/163). 
+
 ## Tests
 
 We use OpenOCD's [RISC-V compliance
