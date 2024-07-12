@@ -55,9 +55,11 @@ entry_loop:
         csrr s0, CSR_MHARTID
 #ifdef SND_SCRATCH
         sw   s0, HALTED(a0)
+        fence
         add  s0, s0, a0
 #else
         sw   s0, HALTED(zero)
+        fence
 #endif
         lbu  s0, FLAGS(s0) // 1 byte flag per hart. Only one hart advances here.
         andi s0, s0, (1 << FLAG_GO)
@@ -94,9 +96,11 @@ _exception:
 going:
 #ifdef SND_SCRATCH
         sw zero, GOING(a0)          // When debug module sees this write, the GO flag is reset.
+        fence
         csrr a0, CSR_DSCRATCH1      // Restore a0 here
 #else
         sw zero, GOING(zero)          // When debug module sees this write, the GO flag is reset.
+        fence
 #endif
         csrr s0, CSR_DSCRATCH0      // Restore s0 here
         jal zero, whereto

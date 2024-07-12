@@ -245,7 +245,7 @@ module dm_mem #(
     // we've got a new request
     if (req_i) begin
       // this is a write
-      if (we_i) begin
+      if (we_i & (|be_i)) begin
         unique case (addr_i[DbgAddressBits-1:0]) inside
           HaltedAddr: begin
             halted_aligned[wdata_hartsel] = 1'b1;
