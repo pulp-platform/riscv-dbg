@@ -183,7 +183,7 @@ module dm_csrs #(
   dm::dmi_resp_t resp_queue_inp;
 
   assign dmi_resp_valid_o     = ~resp_queue_empty;
-  assign dmi_req_ready_o      = ~resp_queue_full;
+  assign dmi_req_ready_o      = ~resp_queue_full & ~sbcs_q.sbbusy;
   assign resp_queue_push      = dmi_req_valid_i & dmi_req_ready_o;
   // SBA
   assign sbautoincrement_o = sbcs_q.sbautoincrement;
