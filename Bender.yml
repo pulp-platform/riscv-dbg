@@ -7,6 +7,7 @@ package:
   authors:
   - Florian Zaruba <zarubaf@iis.ee.ethz.ch>
   - Robert Balas <balasr@iis.ee.ethz.ch>
+  - Moritz Scherer <moritz@mosaic-soc.com>
 
 dependencies:
   tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: 0.2.3 }
@@ -47,3 +48,8 @@ sources:
     - tb/jtag_dmi/jtag_test.sv
     # Level 3
     - tb/jtag_dmi/tb_jtag_dmi.sv
+
+  # Not picking verilator, because interfaces are NOT equivalent
+  - target: verilatable
+    files:
+      - tb/jtag_dmi/jtag_test_vlt.sv
