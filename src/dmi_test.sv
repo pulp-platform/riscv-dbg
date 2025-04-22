@@ -40,8 +40,8 @@ package dmi_test;
   /// A driver for the DMI interface.
   class dmi_driver #(
     parameter int  AW = -1,
-    parameter time TA = 0 , // stimuli application time
-    parameter time TT = 0   // stimuli test time
+    parameter realtime TA = 0 , // stimuli application time
+    parameter realtime TT = 0   // stimuli test time
   );
     virtual DMI_BUS_DV #(
       .ADDR_WIDTH(AW)
@@ -159,8 +159,8 @@ package dmi_test;
     // dmi interface parameters
     parameter int   AW = 32,
     // Stimuli application and test time
-    parameter time  TA = 0ps,
-    parameter time  TT = 0ps
+    parameter realtime  TA = 0ps,
+    parameter realtime  TT = 0ps
   );
 
     typedef dmi_test::dmi_driver #(
@@ -197,8 +197,8 @@ package dmi_test;
     // dmi interface parameters
     parameter int   AW = 32,
     // Stimuli application and test time
-    parameter time  TA = 0ps,
-    parameter time  TT = 0ps,
+    parameter realtime  TA = 0ps,
+    parameter realtime  TT = 0ps,
     parameter int unsigned REQ_MIN_WAIT_CYCLES = 1,
     parameter int unsigned REQ_MAX_WAIT_CYCLES = 20,
     parameter int unsigned RSP_MIN_WAIT_CYCLES = 1,
@@ -253,8 +253,8 @@ package dmi_test;
     // dmi interface parameters
     parameter int   AW = 32,
     // Stimuli application and test time
-    parameter time  TA = 0ps,
-    parameter time  TT = 0ps,
+    parameter realtime  TA = 0ps,
+    parameter realtime  TT = 0ps,
     parameter int unsigned REQ_MIN_WAIT_CYCLES = 0,
     parameter int unsigned REQ_MAX_WAIT_CYCLES = 10,
     parameter int unsigned RSP_MIN_WAIT_CYCLES = 0,
@@ -306,8 +306,8 @@ package dmi_test;
     // dmi interface parameters
     parameter int   AW = 32,
     // Stimuli application and test time
-    parameter time  TA = 0ps,
-    parameter time  TT = 0ps
+    parameter realtime  TA = 0ps,
+    parameter realtime  TT = 0ps
   ) extends rand_dmi #(.AW(AW), .TA(TA), .TT(TT));
 
     mailbox req_mbx = new, rsp_mbx = new;

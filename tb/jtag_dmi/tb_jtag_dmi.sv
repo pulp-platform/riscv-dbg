@@ -7,11 +7,11 @@ module tb_jtag_dmi;
 
   logic clk, rst_n;
 
-  localparam time ClkPeriod = 10ns;
-  localparam time ApplTime =  2ns;
-  localparam time TestTime =  8ns;
+  localparam realtime ClkPeriod = 10ns;
+  localparam realtime ApplTime =  2ns;
+  localparam realtime TestTime =  8ns;
 
-  localparam time JTAGPeriod = 50ns;
+  localparam realtime JTAGPeriod = 50ns;
 
   localparam int unsigned AW = 7;
   localparam IDCode = 32'hdeadbeef | 32'b1;
