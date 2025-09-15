@@ -59,13 +59,13 @@ module dmi_jtag #(
 
   logic dtmcs_select;
 
+  dm::dtmcs_t dtmcs_d, dtmcs_q;
+
   assign dmi_clear = jtag_dmi_clear || (dtmcs_select && update && dtmcs_q.dmihardreset);
 
   // -------------------------------
   // Debug Module Control and Status
   // -------------------------------
-
-  dm::dtmcs_t dtmcs_d, dtmcs_q;
 
   always_comb begin
     dtmcs_d = dtmcs_q;
