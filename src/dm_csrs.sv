@@ -590,7 +590,7 @@ module dm_csrs #(
   assign ndmreset_o = dmcontrol_q.ndmreset;
 
   // response FIFO
-  fifo_v2 #(
+  fifo_v3 #(
     .dtype            ( logic [$bits(dmi_resp_o)-1:0] ),
     .DEPTH            ( 2                             )
   ) i_fifo (
@@ -601,8 +601,7 @@ module dm_csrs #(
     .testmode_i       ( testmode_i           ),
     .full_o           ( resp_queue_full      ),
     .empty_o          ( resp_queue_empty     ),
-    .alm_full_o       (                      ),
-    .alm_empty_o      (                      ),
+    .usage_o          (                      ),
     .data_i           ( resp_queue_inp       ),
     .push_i           ( resp_queue_push      ),
     .data_o           ( dmi_resp_o           ),

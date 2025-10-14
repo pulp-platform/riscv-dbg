@@ -119,7 +119,7 @@ RTLSRC_COMMON		:= $(addprefix common_cells/src/,\
 				spill_register_flushable.sv spill_register.sv \
 				cdc_2phase.sv cdc_2phase_clearable.sv \
 				cdc_reset_ctrlr.sv cdc_4phase.sv \
-				deprecated/fifo_v2.sv fifo_v3.sv \
+				fifo_v3.sv \
 				rstgen.sv rstgen_bypass.sv sync.sv)
 RTLSRC_TECH		:= $(addprefix tech_cells_generic/src/,\
 				rtl/tc_clk.sv)
