@@ -47,3 +47,7 @@ sources:
     - tb/jtag_dmi/jtag_test.sv
     # Level 3
     - tb/jtag_dmi/tb_jtag_dmi.sv
+
+  - target: verilator
+    files:
+    - tb/jtag_dmi/jtag_test_simple.sv
