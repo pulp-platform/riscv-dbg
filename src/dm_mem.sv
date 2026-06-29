@@ -30,6 +30,7 @@ module dm_mem #(
   input  logic [19:0]                      hartsel_i,
   // from Ctrl and Status register
   input  logic [NrHarts-1:0]               haltreq_i,
+  input  logic [NrHarts-1:0]               resethaltreq_i,   // halt-on-reset armed, per hart
   input  logic [NrHarts-1:0]               resumereq_i,
   input  logic                             clear_resumeack_i,
 
@@ -86,6 +87,7 @@ module dm_mem #(
   logic [7:0][63:0]   abstract_cmd;
   logic [NrHarts-1:0] halted_d, halted_q;
   logic [NrHarts-1:0] resuming_d, resuming_q;
+  logic [NrHarts-1:0] resethaltpend_d, resethaltpend_q;
   logic               resume, go, going;
 
   logic exception;
@@ -123,9 +125,23 @@ module dm_mem #(
 
   // Abstract Command Access Register
   assign ac_ar       = dm::ac_ar_cmd_t'(cmd_i.control);
-  assign debug_req_o = haltreq_i;
+  assign debug_req_o = haltreq_i | resethaltpend_q;
   assign halted_o    = halted_q;
   assign resuming_o  = resuming_q;
+
+  // Halt-on-reset: arm while a hart is held in ndmreset with resethaltreq set; hold debug_req
+  // across reset deassert until the hart enters debug (reports halted), then clear. Clearing
+  // resethaltreq also cancels a pending halt.
+  always_comb begin : p_resethalt
+    resethaltpend_d = resethaltpend_q;
+    for (int unsigned h = 0; h < NrHarts; h++) begin
+      if (ndmreset_i && resethaltreq_i[h]) begin
+        resethaltpend_d[h] = 1'b1;
+      end else if (halted_q[h] || !resethaltreq_i[h]) begin
+        resethaltpend_d[h] = 1'b0;
+      end
+    end
+  end
 
   // reshape progbuf
   assign progbuf = progbuf_i;
@@ -535,11 +551,13 @@ module dm_mem #(
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      halted_q   <= 1'b0;
-      resuming_q <= 1'b0;
+      halted_q        <= 1'b0;
+      resuming_q      <= 1'b0;
+      resethaltpend_q <= '0;
     end else begin
-      halted_q   <= SelectableHarts & halted_d;
-      resuming_q <= SelectableHarts & resuming_d;
+      halted_q        <= SelectableHarts & halted_d;
+      resuming_q      <= SelectableHarts & resuming_d;
+      resethaltpend_q <= SelectableHarts & resethaltpend_d;
     end
   end
 
