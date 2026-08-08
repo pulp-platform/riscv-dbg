@@ -11,8 +11,8 @@ package jtag_test;
   class jtag_driver #(
     parameter int IrLength = 0,
     parameter logic [IrLength-1:0] IDCODE = 'h1,
-    parameter time TA = 0ns , // stimuli application time
-    parameter time TT = 0ns   // stimuli test time
+    parameter realtime TA = 0ns , // stimuli application time
+    parameter realtime TT = 0ns   // stimuli test time
   );
 
     virtual JTAG_DV jtag;
@@ -130,8 +130,8 @@ package jtag_test;
     parameter logic [IrLength-1:0] IDCODE    = 'h1,
     parameter logic [IrLength-1:0] DTMCSR    = 'h10,
     parameter logic [IrLength-1:0] DMIACCESS = 'h11,
-    parameter time TA = 0ns, // stimuli application time
-    parameter time TT = 0ns  // stimuli test time
+    parameter realtime TA = 0ns, // stimuli application time
+    parameter realtime TT = 0ns  // stimuli test time
   );
 
     typedef jtag_test::jtag_driver #(
