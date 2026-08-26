@@ -585,15 +585,15 @@ module dm_csrs #(
   assign ndmreset_o = dmcontrol_q.ndmreset;
 
   // response FIFO
-  fifo_v3 #(
-    .dtype            ( logic [$bits(dmi_resp_o)-1:0] ),
-    .DEPTH            ( 2                             )
+  cc_fifo #(
+    .data_t           ( logic [$bits(dmi_resp_o)-1:0] ),
+    .Depth            ( 2                             )
   ) i_fifo (
     .clk_i,
     .rst_ni,
+    .clr_i            ( 1'b0                 ),
     .flush_i          ( ~dmi_rst_ni          ), // Flush the queue if the DTM is
                                                 // reset
-    .testmode_i       ( testmode_i           ),
     .full_o           ( resp_queue_full      ),
     .empty_o          ( resp_queue_empty     ),
     .usage_o          (                      ),
