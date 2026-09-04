@@ -244,7 +244,7 @@ module dm_csrs #(
   assign dmcontrol_write_accepted = dmi_req_ready_o && dmi_req_valid_i &&
                                     dtm_op == dm::DTM_WRITE &&
                                     dm_csr_addr == dm::DMControl;
-  assign dmcontrol_write_resumereq = dmcontrol_write_accepted && dmi_req_i.data[30];
+  assign dmcontrol_write_resumereq = dmcontrol_write_accepted && !cmdbusy_i && dmi_req_i.data[30];
   assign dmcontrol_write_haltreq = dmi_req_i.data[31];
   assign dmcontrol_write_dmactive = dmi_req_i.data[0];
 
@@ -422,7 +422,12 @@ module dm_csrs #(
           end
         end
         dm::DMControl: begin
-          dmcontrol_d = dmi_req_i.data;
+          if (cmdbusy_i) begin
+            dmcontrol_d.ndmreset = dmi_req_i.data[1];
+            dmcontrol_d.dmactive = dmi_req_i.data[0];
+          end else begin
+            dmcontrol_d = dmi_req_i.data;
+          end
           // clear the havreset of the selected hart
           if (dmcontrol_d.ackhavereset && selected_hart_valid) begin
             havereset_d[selected_hart] = 1'b0;

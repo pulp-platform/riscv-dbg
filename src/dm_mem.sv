@@ -106,6 +106,7 @@ module dm_mem #(
   logic        word_enable32_q;
 
   logic [HartSelLen-1:0] hartsel, wdata_hartsel;
+  logic [HartSelLen-1:0] cmd_hartsel_d, cmd_hartsel_q;
   logic                  wdata_hartsel_valid;
   logic [DbgAddressBits-1:0] flags_hart_idx;
   logic [HartSelLen-1:0] flags_hart;
@@ -144,6 +145,7 @@ module dm_mem #(
     cmderror_valid_o = 1'b0;
     cmderror_o       = dm::CmdErrNone;
     state_d          = state_q;
+    cmd_hartsel_d    = cmd_hartsel_q;
     go               = 1'b0;
     cmdbusy_o        = 1'b1;
 
@@ -154,6 +156,7 @@ module dm_mem #(
             !resumereq_aligned[hartsel] && !unsupported_command) begin
           // give the go signal
           state_d = Go;
+          cmd_hartsel_d = hartsel;
         end else if (cmd_valid_i) begin
           // hart must be halted for all requests
           cmderror_valid_o = 1'b1;
@@ -175,7 +178,7 @@ module dm_mem #(
         cmdbusy_o = 1'b1;
         go        = 1'b0;
         // wait until the hart has halted again
-        if (halted_aligned[hartsel]) begin
+        if (halted_aligned[cmd_hartsel_q]) begin
           state_d = Idle;
         end
       end
@@ -350,7 +353,7 @@ module dm_mem #(
               rdata[addr_i[2:0]] = {
                 6'b0,
                 resumereq_aligned[flags_hart] && dmactive_i && !ndmreset_i,
-                go && dmactive_i && flags_hart == hartsel
+                go && dmactive_i && flags_hart == cmd_hartsel_q
               };
             end
             rdata_d = rdata;
@@ -537,6 +540,11 @@ module dm_mem #(
   assign fwd_rom_d = logic'(addr_i[DbgAddressBits-1:0] >= dm::HaltAddress[DbgAddressBits-1:0]);
 
   always_ff @(posedge clk_i or negedge rst_ni) begin : p_regs
+    if (!rst_ni) begin
+      cmd_hartsel_q <= '0;
+    end else begin
+      cmd_hartsel_q <= cmd_hartsel_d;
+    end
     if (!rst_ni) begin
       fwd_rom_q       <= 1'b0;
       rdata_q         <= '0;
