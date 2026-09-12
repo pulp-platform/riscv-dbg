@@ -267,6 +267,7 @@ module dm_csrs #(
     dmstatus.authenticated = 1'b1;
     // we do not support halt-on-reset sequence
     dmstatus.hasresethaltreq = 1'b0;
+    dmstatus.ndmresetpending = dmcontrol_q.ndmreset;
     // TODO(zarubaf) things need to change here if we implement the array mask
     dmstatus.allhavereset = havereset_q_aligned[selected_hart];
     dmstatus.anyhavereset = havereset_q_aligned[selected_hart];
