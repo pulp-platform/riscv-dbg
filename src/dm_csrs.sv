@@ -335,7 +335,8 @@ module dm_csrs #(
           resp_queue_inp.data = data_q[DataIndexWidth'(autoexecdata_idx)];
           if (!cmdbusy_i) begin
             // check whether we need to re-execute the command (just give a cmd_valid)
-            if (cmderr_q == dm::CmdErrNone) cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
+            if (cmderr_q == dm::CmdErrNone)
+              cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
           // An abstract command was executing while one of the data registers was read
           end else begin
             resp_queue_inp.resp = dm::DTM_BUSY;
@@ -356,7 +357,8 @@ module dm_csrs #(
           if (!cmdbusy_i) begin
             // check whether we need to re-execute the command (just give a cmd_valid)
             // range of autoexecprogbuf is 31:16
-            if (cmderr_q == dm::CmdErrNone) cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
+            if (cmderr_q == dm::CmdErrNone)
+              cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
 
           // An abstract command was executing while one of the progbuf registers was read
           end else begin
@@ -411,7 +413,8 @@ module dm_csrs #(
             if (!cmdbusy_i) begin
               data_d_dmi[dmi_req_i.addr[DataIndexWidth-1:0]] = dmi_req_i.data;
               // check whether we need to re-execute the command (just give a cmd_valid)
-              if (cmderr_q == dm::CmdErrNone) cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
+              if (cmderr_q == dm::CmdErrNone)
+                cmd_valid_d = abstractauto_q.autoexecdata[autoexecdata_idx];
             //An abstract command was executing while one of the data registers was written
             end else begin
               resp_queue_inp.resp = dm::DTM_BUSY;
@@ -482,7 +485,8 @@ module dm_csrs #(
             // this should probably throw an error if executed during another command
             // was busy
             // range of autoexecprogbuf is 31:16
-            if (cmderr_q == dm::CmdErrNone) cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
+            if (cmderr_q == dm::CmdErrNone)
+              cmd_valid_d = abstractauto_q.autoexecprogbuf[{1'b1, dmi_req_i.addr[3:0]}];
           //An abstract command was executing while one of the progbuf registers was written
           end else begin
             resp_queue_inp.resp = dm::DTM_BUSY;
