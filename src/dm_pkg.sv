@@ -99,7 +99,9 @@ package dm;
   localparam logic [2:0] CauseSingleStep = 3'h4;
 
   typedef struct packed {
-    logic [31:23] zero1;
+    logic [31:25] zero1;
+    logic         ndmresetpending;
+    logic         stickyunavail;
     logic         impebreak;
     logic [21:20] zero0;
     logic         allhavereset;
