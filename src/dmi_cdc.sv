@@ -47,7 +47,7 @@ module dmi_cdc (
 
   logic                    core_clear_pending;
 
-  cdc_2phase_clearable #(.T(dm::dmi_req_t)) i_cdc_req (
+  cc_cdc_2phase_clearable #(.data_t(dm::dmi_req_t)) i_cdc_req (
     .src_rst_ni  ( trst_ni              ),
     .src_clear_i ( jtag_dmi_cdc_clear_i ),
     .src_clk_i   ( tck_i                ),
@@ -69,7 +69,7 @@ module dmi_cdc (
     .dst_ready_i ( core_dmi_ready_i     )
   );
 
-  cdc_2phase_clearable #(.T(dm::dmi_resp_t)) i_cdc_resp (
+  cc_cdc_2phase_clearable #(.data_t(dm::dmi_resp_t)) i_cdc_resp (
     .src_rst_ni  ( rst_ni               ),
     .src_clear_i ( 1'b0                 ), // No functional reset from core side
                                            // used (only async ).
