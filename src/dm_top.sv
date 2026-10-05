@@ -25,7 +25,12 @@ module dm_top #(
   // that don't use hart numbers in a contiguous fashion.
   parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}},
   // toggle new behavior to drive master_be_o during a read
-  parameter bit                 ReadByteEnable   = 1
+  parameter bit                 ReadByteEnable   = 1,
+  // Advertise support for the halt-on-reset sequence
+  // (dmstatus.hasresethaltreq). Only set this if the harts consume
+  // resethaltreq_o, or ndmreset_o is wired to a reset that resets
+  // them at runtime -- see dm_csrs.
+  parameter bit                 HasResetHaltReq  = 1'b0
 ) (
   input  logic                  clk_i,       // clock
   // asynchronous reset active low, connect PoR here, not the system reset
@@ -41,6 +46,13 @@ module dm_top #(
   input  logic                  ndmreset_ack_i, // non-debug module reset acknowledgement pulse
   output logic                  dmactive_o,  // debug module is active
   output logic [NrHarts-1:0]    debug_req_o, // async debug request
+  // Per-hart halt-on-reset request, from dmcontrol.setresethaltreq /
+  // clrresethaltreq. A hart that consumes this must enter Debug Mode on
+  // the next deassertion of its reset regardless of the cause of that
+  // reset, and may report dcsr.cause = 5 (resethaltreq). Leave this
+  // unconnected when HasResetHaltReq = 0; halting over ndmreset alone
+  // still works through debug_req_o without it.
+  output logic [NrHarts-1:0]    resethaltreq_o,
   // communicate whether the hart is unavailable (e.g.: power down)
   input  logic [NrHarts-1:0]    unavailable_i,
   input  dm::hartinfo_t [NrHarts-1:0] hartinfo_i,
@@ -114,11 +126,13 @@ module dm_top #(
   logic [2:0]                       sberror;
 
   assign ndmreset_o = ndmreset;
+  assign resethaltreq_o = resethaltreq;
 
   dm_csrs #(
     .NrHarts(NrHarts),
     .BusWidth(BusWidth),
-    .SelectableHarts(SelectableHarts)
+    .SelectableHarts(SelectableHarts),
+    .HasResetHaltReq(HasResetHaltReq)
   ) i_dm_csrs (
     .clk_i,
     .rst_ni,

@@ -18,7 +18,14 @@
 module dm_csrs #(
   parameter int unsigned        NrHarts          = 1,
   parameter int unsigned        BusWidth         = 32,
-  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}}
+  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}},
+  // Advertise support for the halt-on-reset sequence in
+  // dmstatus.hasresethaltreq. Leave this at 0 unless the harts actually
+  // honour the request: when hasresethaltreq is set, the Debug
+  // Specification requires a hart with its halt-on-reset request bit set
+  // to enter Debug Mode out of reset, so advertising it on a system that
+  // cannot perform the sequence would be non-compliant.
+  parameter bit                 HasResetHaltReq  = 1'b0
 ) (
   input  logic                              clk_i,           // Clock
   input  logic                              rst_ni,          // Asynchronous reset active low
@@ -236,8 +243,9 @@ module dm_csrs #(
     dmstatus.version = dm::DbgVersion013;
     // no authentication implemented
     dmstatus.authenticated = 1'b1;
-    // we support the halt-on-reset sequence
-    dmstatus.hasresethaltreq = 1'b1;
+    // halt-on-reset support is advertised only when the integrator has
+    // confirmed the harts honour the request
+    dmstatus.hasresethaltreq = HasResetHaltReq;
     // TODO(zarubaf) things need to change here if we implement the array mask
     dmstatus.allhavereset = havereset_q_aligned[selected_hart];
     dmstatus.anyhavereset = havereset_q_aligned[selected_hart];
@@ -399,8 +407,13 @@ module dm_csrs #(
           // halt-on-reset: set/clear applies to the hart selected by THIS write
           resethaltsel = HartSelLen'({dmcontrol_d.hartselhi, dmcontrol_d.hartsello});
           if (resethaltsel <= HartSelLen'(NrHarts-1)) begin
-            if (dmcontrol_d.setresethaltreq) resethaltreq_d[resethaltsel] = 1'b1;
-            if (dmcontrol_d.clrresethaltreq) resethaltreq_d[resethaltsel] = 1'b0;
+            // setresethaltreq writes the bit "unless clrresethaltreq is
+            // simultaneously set to 1", so clear wins on a conflicting write
+            if (dmcontrol_d.clrresethaltreq) begin
+              resethaltreq_d[resethaltsel] = 1'b0;
+            end else if (dmcontrol_d.setresethaltreq) begin
+              resethaltreq_d[resethaltsel] = 1'b1;
+            end
           end
         end
         dm::DMStatus:; // write are ignored to R/O register

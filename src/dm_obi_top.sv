@@ -67,7 +67,9 @@ module dm_obi_top #(
   parameter int unsigned        DmBaseAddress    = 'h1000, // default to non-zero page
   // Bitmask to select physically available harts for systems
   // that don't use hart numbers in a contiguous fashion.
-  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}}
+  parameter logic [NrHarts-1:0] SelectableHarts  = {NrHarts{1'b1}},
+  // Advertise support for the halt-on-reset sequence; see dm_top.
+  parameter bit                 HasResetHaltReq  = 1'b0
 ) (
   input  logic                  clk_i,           // clock
   // asynchronous reset active low, connect PoR here, not the system reset
@@ -76,6 +78,9 @@ module dm_obi_top #(
   output logic                  ndmreset_o,      // non-debug module reset
   output logic                  dmactive_o,      // debug module is active
   output logic [NrHarts-1:0]    debug_req_o,     // async debug request
+  // Per-hart halt-on-reset request; see dm_top. Leave unconnected
+  // when HasResetHaltReq = 0.
+  output logic [NrHarts-1:0]    resethaltreq_o,
   // communicate whether the hart is unavailable (e.g.: power down)
   input  logic [NrHarts-1:0]    unavailable_i,
   input  dm::hartinfo_t [NrHarts-1:0]  hartinfo_i,
@@ -126,7 +131,8 @@ module dm_obi_top #(
     .NrHarts                 ( NrHarts               ),
     .BusWidth                ( BusWidth              ),
     .DmBaseAddress           ( DmBaseAddress         ),
-    .SelectableHarts         ( SelectableHarts       )
+    .SelectableHarts         ( SelectableHarts       ),
+    .HasResetHaltReq         ( HasResetHaltReq       )
   ) i_dm_top (
     .clk_i                   ( clk_i                 ),
     .rst_ni                  ( rst_ni                ),
@@ -136,6 +142,7 @@ module dm_obi_top #(
     .ndmreset_ack_i          ( ndmreset_o            ), // This is currently not exposed yet.
     .dmactive_o              ( dmactive_o            ),
     .debug_req_o             ( debug_req_o           ),
+    .resethaltreq_o          ( resethaltreq_o        ),
     .unavailable_i           ( unavailable_i         ),
     .hartinfo_i              ( hartinfo_i            ),
 
