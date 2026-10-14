@@ -27,7 +27,12 @@ module dm_top #(
   // toggle new behavior to drive master_be_o during a read
   parameter bit                 ReadByteEnable         = 1,
   // Maximum width supported by Access Register commands; must be 32 or 64.
-  parameter int unsigned        MaxRegisterAccessWidth = BusWidth
+  parameter int unsigned        MaxRegisterAccessWidth = BusWidth,
+  // Advertise support for the halt-on-reset sequence
+  // (dmstatus.hasresethaltreq). Only set this if the harts consume
+  // resethaltreq_o, or ndmreset_o is wired to a reset that resets
+  // them at runtime -- see dm_csrs.
+  parameter bit                 HasResetHaltReq        = 1'b0
 ) (
   input  logic                  clk_i,       // clock
   // asynchronous reset active low, connect PoR here, not the system reset
@@ -43,6 +48,13 @@ module dm_top #(
   input  logic                  ndmreset_ack_i, // non-debug module reset acknowledgement pulse
   output logic                  dmactive_o,  // debug module is active
   output logic [NrHarts-1:0]    debug_req_o, // async debug request
+  // Per-hart halt-on-reset request, from dmcontrol.setresethaltreq /
+  // clrresethaltreq. A hart that consumes this must enter Debug Mode on
+  // the next deassertion of its reset regardless of the cause of that
+  // reset, and may report dcsr.cause = 5 (resethaltreq). Leave this
+  // unconnected when HasResetHaltReq = 0; halting over ndmreset alone
+  // still works through debug_req_o without it.
+  output logic [NrHarts-1:0]    resethaltreq_o,
   // communicate whether the hart is unavailable (e.g.: power down)
   input  logic [NrHarts-1:0]    unavailable_i,
   input  dm::hartinfo_t [NrHarts-1:0] hartinfo_i,
@@ -83,6 +95,7 @@ module dm_top #(
   // logic [NrHarts-1:0]               running;
   logic [NrHarts-1:0]               resumeack;
   logic [NrHarts-1:0]               haltreq;
+  logic [NrHarts-1:0]               resethaltreq;
   logic [NrHarts-1:0]               resumereq;
   logic [NrHarts-1:0]               clear_resumeack;
   logic                             cmd_valid;
@@ -115,11 +128,13 @@ module dm_top #(
   logic [2:0]                       sberror;
 
   assign ndmreset_o = ndmreset;
+  assign resethaltreq_o = resethaltreq;
 
   dm_csrs #(
     .NrHarts(NrHarts),
     .BusWidth(BusWidth),
-    .SelectableHarts(SelectableHarts)
+    .SelectableHarts(SelectableHarts),
+    .HasResetHaltReq(HasResetHaltReq)
   ) i_dm_csrs (
     .clk_i,
     .rst_ni,
@@ -143,6 +158,7 @@ module dm_top #(
     .haltreq_o               ( haltreq               ),
     .resumereq_o             ( resumereq             ),
     .clear_resumeack_o       ( clear_resumeack       ),
+    .resethaltreq_o          ( resethaltreq          ),
     .cmd_valid_o             ( cmd_valid             ),
     .cmd_o                   ( cmd                   ),
     .cmderror_valid_i        ( cmderror_valid        ),
@@ -219,6 +235,7 @@ module dm_top #(
     .ndmreset_i              ( ndmreset              ),
     .hartsel_i               ( hartsel               ),
     .haltreq_i               ( haltreq               ),
+    .resethaltreq_i          ( resethaltreq          ),
     .resumereq_i             ( resumereq             ),
     .clear_resumeack_i       ( clear_resumeack       ),
     .halted_o                ( halted                ),
