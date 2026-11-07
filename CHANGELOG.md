@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Fixed
+- Report sticky DMI status at Capture for pending writes and failed operations.
 - Keep accepted resume requests pending per hart until acknowledged, clear resumeack only for the
   request target, and retain resumeack across ndmreset; widen the internal dm_csrs/dm_mem
   clear_resumeack connection from scalar to a per-hart vector and add a dmactive reset input to
