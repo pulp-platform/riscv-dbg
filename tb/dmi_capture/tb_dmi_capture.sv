@@ -31,7 +31,7 @@ module tb_dmi_capture;
  always @(posedge sys_clk)begin
   cycle++;
   if(case_id!=0 && !stopped && $time-case_started>=1ms)begin
-   stopped=1;$display("[E_DEBUG_WAIT_LIMIT] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f label=case_deadline",Scope,profile,case_id,epoch,cycle,$realtime*1000.0);
+   stopped=1;$display("[DMI_CAPTURE_WAIT_LIMIT] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f label=case_deadline",Scope,profile,case_id,epoch,cycle,$realtime*1000.0);
   end
   if(!rst_n || !dmi_rst_n)stub_pending<=0;
   else begin
@@ -68,24 +68,24 @@ module tb_dmi_capture;
  typedef jtag_test::jtag_driver #(.IrLength(5),.TA(2ns),.TT(18ns)) jdrv_t;
  jdrv_t jdrv;
  task automatic fail(input string label,input logic[63:0] actual,input logic[63:0] expected);
-   errors++;$display("[E_DEBUG_ERROR] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f label=%s actual=%h expected=%h",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,label,actual,expected);
+   errors++;$display("[DMI_CAPTURE_ERROR] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f label=%s actual=%h expected=%h",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,label,actual,expected);
  endtask
  task automatic check(input bit good,input string label,input logic[63:0] actual,input logic[63:0] expected);
    checks++;if(!good)fail(label,actual,expected);
  endtask
  task automatic limit(input string label);
-   stopped=1;$display("[E_DEBUG_WAIT_LIMIT] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f label=%s",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,label);forever@(posedge sys_clk);
+   stopped=1;$display("[DMI_CAPTURE_WAIT_LIMIT] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f label=%s",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,label);forever@(posedge sys_clk);
  endtask
  task automatic control(input string label);
-   stopped=1;$display("[E_DEBUG_CONTROL_ERROR] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f label=%s",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,label);forever@(posedge sys_clk);
+   stopped=1;$display("[DMI_CAPTURE_CONTROL_ERROR] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f label=%s",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,label);forever@(posedge sys_clk);
  endtask
  task automatic begin_case(input int id,input string kind);
    if(stopped)forever@(posedge sys_clk);case_id=id;cases++;case_started=$time;
-   $display("[E_DEBUG_CASE] event=begin scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f kind=%s",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,kind);
+   $display("[DMI_CAPTURE_CASE] event=begin scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f kind=%s",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,kind);
  endtask
  task automatic end_case;
    if(stopped)forever@(posedge sys_clk);
-   $display("[E_DEBUG_CASE] event=end scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f errors=%0d",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,errors);
+   $display("[DMI_CAPTURE_CASE] event=end scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f errors=%0d",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,errors);
    case_id=0;
  endtask
  task automatic scan_dmi(input logic[40:0] request,output logic[40:0] response);
@@ -94,13 +94,13 @@ module tb_dmi_capture;
    @(posedge tck);for(int b=0;b<41;b++)tx.push_back(request[b]);
    jdrv.set_ir(5'h11);jdrv.shift_dr();jdrv.readwrite_bits(rx,tx,1'b1);jdrv.update_dr(1'b0);
    response='x;for(int b=0;b<41;b++)response[b]=rx[b];
-   $display("[E_DEBUG_SCAN] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f width=41 request=%h response=%h",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,request,response);
+   $display("[DMI_CAPTURE_SCAN] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f width=41 request=%h response=%h",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,request,response);
  endtask
  task automatic scan_dtmcs(input logic[31:0] request,output logic[31:0] response);
    logic tx[$],rx[$];if(stopped)forever@(posedge sys_clk);@(posedge tck);for(int b=0;b<32;b++)tx.push_back(request[b]);
    jdrv.set_ir(5'h10);jdrv.shift_dr();jdrv.readwrite_bits(rx,tx,1'b1);jdrv.update_dr(1'b0);
    response='x;for(int b=0;b<32;b++)response[b]=rx[b];
-   $display("[E_DEBUG_SCAN] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f width=32 ir=10 request=%h response=%h",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,request,response);
+   $display("[DMI_CAPTURE_SCAN] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f width=32 ir=10 request=%h response=%h",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,request,response);
  endtask
  task automatic identity;
    logic tx[$],rx[$];logic[31:0] value,dtmcs;
@@ -182,7 +182,7 @@ module tb_dmi_capture;
        if(hold_req)begin wait_request();old_count=0;check(accepted==a0,"old_not_accepted",accepted-a0,0);end
        else begin wait_count(0,a0+1);old_count=1;end
        check(responses==r0,"old_response_not_returned",responses-r0,0);
-       $display("[E_DEBUG_ABORT] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f accepted=%0d returned=%0d reset_kind=%0d",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,accepted-a0,responses-r0,reset_kind);
+       $display("[DMI_CAPTURE_ABORT] scope=%s profile=%s case=%0d epoch=%0d cycle=%0d time_ps=%0.0f accepted=%0d returned=%0d reset_kind=%0d",Scope,profile,case_id,epoch,cycle,$realtime*1000.0,accepted-a0,responses-r0,reset_kind);
        epoch++;
        if(reset_kind==0)scan_dtmcs(32'h00020000,ignored);
        else if(reset_kind==1)begin jdrv.reset_master();jdrv.soft_reset();end
@@ -246,17 +246,17 @@ module tb_dmi_capture;
    check(responses==54,"boundary_response_count",responses,54);
  endtask
  initial begin
-   if(!$value$plusargs("E_DEBUG_PROFILE=%s",profile))profile="transport";
+   if(!$value$plusargs("DMI_CAPTURE_PROFILE=%s",profile))profile="transport";
    if(!(profile inside {"transport","boundary"}))control("unsupported_profile");
    for(int a=0;a<128;a++)registers[a]=32'ha5a5a5a5;
    jtag.tms=1'b1;jtag.tdi=1'b0;jtag.trst_n=1'b0;
    jdrv=new(jtag);enabled=1;
-   $display("[E_DEBUG_META] schema=1 scope=unit profile=%s clock_ps=5000 tck_ps=20000 ir_bits=5 dr_bits=41",profile);
+   $display("[DMI_CAPTURE_META] schema=1 scope=unit profile=%s clock_ps=5000 tck_ps=20000 ir_bits=5 dr_bits=41",profile);
    repeat(16)@(posedge sys_clk);@(negedge sys_clk);rst_n=1;
    jdrv.reset_master();jdrv.soft_reset();jdrv.wait_idle(10);
    if(profile=="transport")transport_profile();else boundary_profile();
    repeat(32)@(posedge sys_clk);
-   $display("[E_DEBUG_DONE] scope=unit profile=%s cases=%0d checks=%0d errors=%0d dmi_requests=%0d dmi_responses=%0d sba_requests=0",profile,cases,checks,errors,accepted,responses);$finish;
+   $display("[DMI_CAPTURE_DONE] scope=unit profile=%s cases=%0d checks=%0d errors=%0d dmi_requests=%0d dmi_responses=%0d",profile,cases,checks,errors,accepted,responses);$finish;
  end
- initial begin #10000000ns;$display("[E_DEBUG_HDL_LIMIT] scope=unit profile=%s case=%0d epoch=%0d cycle=%0d errors=%0d",profile,case_id,epoch,cycle,errors);$finish;end
+ initial begin #10000000ns;$display("[DMI_CAPTURE_HDL_LIMIT] scope=unit profile=%s case=%0d epoch=%0d cycle=%0d errors=%0d",profile,case_id,epoch,cycle,errors);$finish;end
 endmodule

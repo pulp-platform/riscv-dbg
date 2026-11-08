@@ -49,8 +49,8 @@ timeout 180 vcs -full64 -sverilog -timescale=1ns/1ps +lint=all \
   "$DBG/src/dmi_jtag.sv" "$DBG/tb/dmi_capture/tb_dmi_capture.sv" \
   -top tb_dmi_capture -o simv -l compile.log
 mkdir transport boundary
-(cd transport; timeout 60 ../simv +E_DEBUG_PROFILE=transport -l run.log)
-(cd boundary; timeout 60 ../simv +E_DEBUG_PROFILE=boundary -l run.log)
+(cd transport; timeout 60 ../simv +DMI_CAPTURE_PROFILE=transport -l run.log)
+(cd boundary; timeout 60 ../simv +DMI_CAPTURE_PROFILE=boundary -l run.log)
 ```
 
 For the original comparison, use only `src/dmi_jtag.sv` from the stated base.
