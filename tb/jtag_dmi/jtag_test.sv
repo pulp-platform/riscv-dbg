@@ -196,42 +196,48 @@ package jtag_test;
       write_dtmcs(dmireset);
     endtask
 
-    task write_dmi(input dm::dm_csr_e address, input logic [31:0] data);
-      logic write_data [$];
-      logic [DMIWidth-1:0] write_data_packed = {
-        address[DMIAddrWidth-1:0], data, dm::DTM_WRITE
-      };
-      for (int i = 0; i < DMIWidth; i++) write_data.push_back(write_data_packed[i]);
+    // Capture reports the previous operation. Update submits the new request.
+    task scan_dmi(input logic [DMIWidth-1:0] request, output logic [DMIWidth-1:0] response);
+      logic write_data[$], read_data[$];
+      // Callers may return from a system-clock event rather than a TCK edge.
+      @(posedge jtag.jtag.clk_i);
+      for (int i = 0; i < DMIWidth; i++) write_data.push_back(request[i]);
       jtag.set_ir(DMIACCESS);
       jtag.shift_dr();
-      jtag.write_bits(write_data, 1'b1);
+      jtag.readwrite_bits(read_data, write_data, 1'b1);
       jtag.update_dr(1'b0);
+      foreach (read_data[i]) response[i] = read_data[i];
+    endtask
+
+    // Return errors without clearing sticky status or repeating a write.
+    task write_dmi_status(input dm::dm_csr_e address, input logic [31:0] data,
+                          output dm::dtm_op_status_e op, input int wait_cycles = 10);
+      logic [DMIWidth-1:0] response;
+      scan_dmi({address[DMIAddrWidth-1:0], data, dm::DTM_WRITE}, response);
+      op = dm::dtm_op_status_e'(response[1:0]);
+      if (op !== dm::DTM_SUCCESS) return;
+      jtag.wait_idle(wait_cycles);
+      scan_dmi('0, response);
+      op = dm::dtm_op_status_e'(response[1:0]);
+    endtask
+
+    task write_dmi(input dm::dm_csr_e address, input logic [31:0] data);
+      dm::dtm_op_status_e op;
+      write_dmi_status(address, data, op);
+      if (op !== dm::DTM_SUCCESS) $fatal(1, "DMI write to %0h returned status %0d.", address, op);
     endtask
 
     task read_dmi(input dm::dm_csr_e address, output logic [31:0] data, input int wait_cycles = 10,
                   output dm::dtm_op_status_e op);
-      logic read_data [$];
-      logic write_data [$];
-      logic [DMIWidth-1:0] data_out = 0;
-      automatic logic [DMIWidth-1:0] write_data_packed = {
-        address[DMIAddrWidth-1:0], 32'b0, dm::DTM_READ
-      };
-      for (int i = 0; i < DMIWidth; i++) write_data.push_back(write_data_packed[i]);
-      jtag.set_ir(DMIACCESS);
-      // send read command
-      jtag.shift_dr();
-      jtag.write_bits(write_data, 1'b1);
-      jtag.update_dr(1'b0);
-      jtag.wait_idle(wait_cycles);
-      // shift out read data
-      jtag.shift_dr();
-      write_data_packed = {address[DMIAddrWidth-1:0], 32'b0, dm::DTM_NOP};
-      foreach (write_data[i]) write_data[i] = write_data_packed[i];
-      jtag.readwrite_bits(read_data, write_data, 1'b1);
-      jtag.update_dr(1'b0);
-      foreach (read_data[i]) data_out[i] = read_data[i];
+      logic [DMIWidth-1:0] data_out;
+      data = 'x;
+      scan_dmi({address[DMIAddrWidth-1:0], 32'b0, dm::DTM_READ}, data_out);
       op = dm::dtm_op_status_e'(data_out[1:0]);
-      data = data_out[33:2];
+      if (op !== dm::DTM_SUCCESS) return;
+      jtag.wait_idle(wait_cycles);
+      scan_dmi('0, data_out);
+      op = dm::dtm_op_status_e'(data_out[1:0]);
+      if (op === dm::DTM_SUCCESS) data = data_out[33:2];
     endtask
 
     // Repeatedly read DMI until we get a valid response.
