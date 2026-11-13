@@ -63,3 +63,38 @@ The regression does not claim DM CSR/SBA, arbitrary clock ratios, or the separat
 DM-internal BUSY policy in issue #202.
 
 AI assistance: OpenAI Codex assisted implementation, test and validation.
+
+## Existing JTAG regression
+
+The Capture fix also exposes a timing assumption in `tb_jtag_dmi`. The test
+starts the next scan before a write completes, ignores BUSY, and queues the
+rejected request in its scoreboard. The test now gives writes the same
+10-TCK idle interval used for reads and checks the returned read status.
+This interval covers the bounded random slave in this test. The shared JTAG
+driver and production RTL are unchanged by this test update.
+
+Run the existing test through its official entry:
+
+```sh
+timeout 180 make -C ci jtag-dmi
+timeout 60 build/jtag-verilator/obj_dir/Vtb_jtag_dmi +verilator+seed+1
+timeout 60 build/jtag-verilator/obj_dir/Vtb_jtag_dmi +verilator+seed+2
+```
+
+Local comparison used Verilator 5.050, Z3 4.8.12 and Bender 0.32.1. Both RTL
+versions used the same resolved dependency revisions:
+
+- common_cells 1.40.0 `1281545696eb3fcba50ec5b4275993476a3c710e`
+- common_verification 0.2.5 `fb1885f48ea46164a10568aeff51884389f67ae3`
+- tech_cells_generic 0.2.14 `3a3de73632a06826b1bd9c65a0a2e92b32016845`
+
+The original test passes with the base RTL and fails with the Capture fix at
+the same address mismatch as CI: expected `0x31`, observed `0x5c`. A passive
+trace matches the first three requests in both versions. With the Capture fix,
+the third request sees BUSY because the preceding write is still pending.
+The read is rejected, and later random sequences diverge after that rejection.
+
+With the updated test, both RTL versions complete all 2000 transactions at the
+default seed. The Capture fix also passes seeds 1 and 2, with 2000 transactions
+each. The formatted standalone test passes the repository's Verible check.
+Its VCS transport and boundary check records match the previous runs exactly.

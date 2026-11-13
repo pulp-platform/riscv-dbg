@@ -236,12 +236,16 @@ module tb_jtag_dmi;
       if (transaction.op == dm::DTM_WRITE) begin
         req_mbx.put(transaction);
         riscv_dbg.write_dmi(dm::dm_csr_e'(transaction.addr), transaction.data);
+        // Let the bounded random slave and CDC finish before the next Capture-DR.
+        riscv_dbg.wait_idle(10);
         rsp_mbx.put('h0);
       end else if (transaction.op == dm::DTM_READ) begin
         automatic logic [31:0] rdata;
         automatic dm::dtm_op_status_e op_status;
         req_mbx.put(transaction);
         riscv_dbg.read_dmi(dm::dm_csr_e'(transaction.addr), rdata, 10, op_status);
+        assert(op_status == dm::DTM_SUCCESS) else
+          $error("Unexpected DMI read status: %0d.", op_status);
         rsp_mbx.put(rdata);
       end
       // Randomly reset the dmi using either hard jtag trst_ni, JTAG
