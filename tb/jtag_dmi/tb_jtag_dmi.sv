@@ -310,4 +310,9 @@ module tb_jtag_dmi;
     assert(NrRandomTransactions == nr_transactions) else $error("Remaining transactions.");
   end
 
+  initial begin
+    #50ms;
+    $fatal(1, "JTAG DMI regression timed out.");
+  end
+
 endmodule

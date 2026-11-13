@@ -72,6 +72,7 @@ rejected request in its scoreboard. The test now gives writes the same
 10-TCK idle interval used for reads and checks the returned read status.
 This interval covers the bounded random slave in this test. The shared JTAG
 driver and production RTL are unchanged by this test update.
+The random test also has a 50 ms HDL deadline to catch incomplete transactions.
 
 Run the existing test through its official entry:
 
